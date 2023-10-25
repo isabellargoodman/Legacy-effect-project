@@ -1,0 +1,238 @@
+---
+title: "secondary question 2"
+output: html_document
+date: "2023-09-04"
+------
+title: "question 1 secondary"
+output: html_document
+date: "2023-08-24"
+---
+```{r}
+
+#Load libraries
+library(dplyr)
+library(tidyverse)
+library(splitstackshape)
+library(plotrix)
+library(ggplot2)
+library(ggpubr)
+
+#Load data
+setwd("~/Desktop/Legacy Project")
+legacydata<-readRDS("legacydata.rds")
+
+#Create Mean annual precip variable
+MAP<-legacydata%>%
+  group_by(x,y,ecoregion)%>%
+  summarise_at(vars(PPT),
+               list(MAP = mean))
+legacydata<-left_join(x=legacydata, y=MAP, by=c("x", "y", "ecoregion")) 
+ 
+#Create a column for whether or not an observation falls above or below MAP 
+legacydata<-legacydata%>%
+   mutate(above_below = case_when(
+     (PPT>MAP)~"above",
+     (PPT<MAP)~"below"))
+
+```
+
+```{r}
+#Subset data by ecoregion
+cali_ecoregion<-legacydata[legacydata$ecoregion=='cali',]
+cold_ecoregion<-legacydata[legacydata$ecoregion=='cold',]
+northern_ecoregion<-legacydata[legacydata$ecoregion=='northern',]
+sgs_ecoregion<-legacydata[legacydata$ecoregion=='sgs',]
+hot_ecoregion<-legacydata[legacydata$ecoregion=='hot',]
+```
+
+```{r}
+lm_onlyPPT_coef<-list()
+lm_PPTnpp_coef<-list()
+
+lm_onlyPPT_aic<-list()
+lm_PPTnpp_aic<-list()
+
+lm_onlyPPT_rsquared<-list()
+lm_PPTnpp_rsquared<-list()
+```
+
+
+```{r}
+for(i in 1:5)
+{
+  # Stratify by region and the MAP of the region #
+  test.strat.northern_mixed<-stratified(northern_ecoregion, "above_below", 0.0001)
+  test.strat.cold_deserts<-stratified(cold_ecoregion,"above_below", 0.0001)
+  test.strat.california_annuals<-stratified(cali_ecoregion, "above_below", 0.0001)
+  test.strat.shortgrass_steppe<-stratified(sgs_ecoregion, "above_below", 0.0001)
+  test.strat.hot_deserts<-stratified(hot_ecoregion,"above_below", 0.0001)
+  test.strat<-rbind(test.strat.northern_mixed, test.strat.cold_deserts, test.strat.california_annuals, 
+                    test.strat.shortgrass_steppe, test.strat.hot_deserts)
+  
+lm_onlyPPT<-lm(NPPdev~PPTdev, data=test.strat)
+
+lm_PPTnpp<-lm(NPPdev~PPTdev+lagNPPdev, data=test.strat)
+
+# Now get and store information from the models in the lists 
+  
+lm_onlyPPT_coef[[i]]<-(df.coef.create(lm_onlyPPT))
+lm_PPTnpp_coef[[i]]<-(df.coef.create(lm_PPTnpp))
+
+lm_onlyPPT_aic[[i]]<-(df.aic.create(lm_onlyPPT))
+lm_PPTnpp_aic[[i]]<-(df.aic.create(lm_PPTnpp))
+
+lm_onlyPPT_rsquared[[i]]<-(df.r.squared.create(lm_onlyPPT))
+lm_PPTnpp_rsquared[[i]]<-(df.r.squared.create(lm_PPTnpp))
+}
+```
+
+```{r}
+#Store Coefficients from the models in the lists
+onlyPPT_coefficients<-list_to_df_initial( lm_onlyPPT_coef)
+onlyPPT_coefficients$model<-'onlyPPT'
+onlyPPT_coefficients <- onlyPPT_coefficients %>% 
+       rename("coef" = "coefficient.PPTdev")
+
+PPTnpp_coefficients<-list_to_df_initial(lm_PPTnpp_coef)
+PPTnpp_coefficients$model<-'PPTnpp'
+PPTnpp_coefficients <- PPTnpp_coefficients %>% 
+       rename("coef" = "coefficient.temporal")
+
+coefficients<-rbind(onlyPPT_coefficients,PPTnpp_coefficients)
+write_rds(onlyPPT_coefficients,"onlyPPT_coefficients2.rds")
+write_rds(PPTnpp_coefficients,"PPTnpp_coefficients2.rds")
+
+PPTnpp_coefficients<-readRDS("PPTnpp_coefficients2.rds")
+
+```
+
+```{r}
+#Store AIC scores from the models in the lists
+aic.onlyPPT.binded<-bind.aic(lm_onlyPPT_aic)
+aic.onlyPPT.binded$model<-'onlyPPT'
+
+aic.PPTnpp.binded<-bind.aic(lm_PPTnpp_aic)
+aic.PPTnpp.binded$model<-'PPTnpp'
+
+aic.binded<-do.call("rbind", list(aic.PPTnpp.binded,aic.onlyPPT.binded))
+
+write_rds(aic.binded,"aic.binded2.rds")
+```
+
+```{r}
+#Store R-squared values from the models in the lists
+r.squared.onlyNPP.binded<-bind.r.squared(lm_onlyPPT_rsquared)
+r.squared.onlyNPP.binded$model<-'onlyPPT'
+
+r.squared.PPTnpp.binded<-bind.r.squared(lm_PPTnpp_rsquared)
+r.squared.PPTnpp.binded$model<-'PPTnpp'
+
+rsquared.binded<-do.call("rbind", list(r.squared.onlyNPP.binded,r.squared.PPTnpp.binded))
+write_rds(rsquared.binded,"rsquared.binded2.rds")
+```
+
+```{r}
+#calculate mean coefficients, AIC, and R-squared values
+mean_coefficients<-PPTnpp_coefficients%>%
+  group_by(model)%>%
+  summarise_at(vars(coef),
+               list(mean))
+mean_coefficients
+
+mean_aic<-aic.binded%>%
+  group_by(model)%>%
+  summarise_at(vars(aic),
+               list(mean))
+mean_aic
+
+mean_rsquared<-rsquared.binded%>%
+  group_by(model)%>%
+  summarise_at(vars(r.squared),
+               list(mean))
+mean_rsquared
+```
+
+```{r}
+#create supporting figure 2
+rsquaredfigure<-ggplot(mean_rsquared,aes(y=r.squared, x=model, fill=model))+
+  ylab("Mean R-squared")+
+  xlab("Model")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
+  geom_bar(stat="identity", position="dodge")+
+  scale_fill_manual(values = c("darkslategray3", "indianred"),
+                    labels=c("only PPT","PPT and NPP"))+
+  rremove("grid")+
+  theme(axis.line = element_line(),
+        panel.background = element_blank())+
+  theme(axis.title.x =element_text(size=20),
+        axis.title.y = element_text(size=20),
+        axis.text.x=element_text(size=18),
+        axis.text.y=element_text(size=18))+
+ theme(legend.key.size = unit(.75, 'cm'), #change legend key size
+        legend.title = element_text(size=13), #change legend title font size
+        legend.text = element_text(size=11), 
+        axis.text=element_text(size=9),
+        axis.title=element_text(size=13))
+rsquaredfigure
+```
+
+```{r}
+
+AICfig<-ggplot(mean_aic,aes(y=aic, x=model, fill=model))+
+  ylab("Mean AIC")+
+  xlab("Model")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
+  geom_bar(stat="identity", position="dodge")+
+  scale_fill_manual(values = c("darkslategray3", "indianred"),
+                    labels=c("only PPT","PPT and NPP"))+
+  rremove("grid")+
+  theme(axis.line = element_line(),
+        panel.background = element_blank())+
+  theme(axis.title.x =element_text(size=20),
+        axis.title.y = element_text(size=20),
+        axis.text.x=element_text(size=18),
+        axis.text.y=element_text(size=18))+
+ theme(legend.key.size = unit(.75, 'cm'), #change legend key size
+        legend.title = element_text(size=13), #change legend title font size
+        legend.text = element_text(size=11), 
+        axis.text=element_text(size=9),
+        axis.title=element_text(size=13))
+AICfig
+```
+
+```{r}
+#create supporting figure 2
+jpeg("Supporting fig 2(all ecoregions).jpeg",
+     width=14,
+     height=10,
+     units="in",
+     res=300)
+rsquaredaic2<-ggarrange(AICfig, rsquaredfigure,
+          nrow=1, ncol=2,common.legend = TRUE, labels=c('(a)','(b)'),font.label = list(size = 20))
+rsquaredaic2
+dev.off()
+```
+
+```{r}
+#Calculate 99% CI
+aic.binded.wide<-reshape(aic.binded,idvar="run.id",timevar="model",direction="wide")
+aic.binded.wide$diff<-aic.binded.wide$aic.onlyPPT-aic.binded.wide$aic.PPTnpp
+mean<-mean(aic.binded.wide$diff)
+SE<-std.error(aic.binded.wide$diff)
+mean
+mean+(2.576*SE)
+mean-(2.576*SE)
+
+```
+
+```{r}
+#Calculate 99% CI
+rsquared.binded.wide<-reshape(rsquared.binded,idvar="run.id",timevar="model",direction="wide")
+rsquared.binded.wide$diff<-rsquared.binded.wide$r.squared.onlyPPT-rsquared.binded.wide$r.squared.PPTnpp
+mean<-mean(rsquared.binded.wide$diff)
+SE<-std.error(rsquared.binded.wide$diff)
+mean
+mean+(2.576*SE)
+mean-(2.576*SE)
+```
+
