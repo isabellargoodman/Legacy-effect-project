@@ -1,0 +1,144 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-05"
+---
+
+```{r}
+#load libraries
+library(dplyr)
+library(tidyverse)
+library(raster)
+library(rgdal)
+library(graphics)
+library(ggpubr)
+library(gridExtra)
+library(magick)
+ 
+#loaddata
+setwd("~/Desktop/Legacy Project")
+legacydata<-readRDS("legacydata.rds")
+mlr<-readRDS("mlrmodel_coef4.rds")
+```
+
+```{r}
+setwd("~/Desktop/rds")
+us<-readRDS("gadm36_USA_1_sp.rds")
+us<-getData("GADM", country='USA', level=1,download=TRUE)
+states_all_sites <- us[us$NAME_1 %in% c('California','New Mexico','Arizona','Utah',
+                                        'Arizona','Colorado','Washington','Wyoming',
+                                        'Idaho','Oregon','Idaho','Montana','Texas',
+                                        'North Dakota','South Dakota','Nebraska',
+                                        'Oklahoma','Kansas'),]
+
+aea.proj <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+states_all_sites <- spTransform(states_all_sites, CRS(aea.proj))
+```
+
+```{r}
+r_obj <- raster(xmn=-122.9, xmx=-97, ymn=28, ymx=49, resolution=c(0.01347473, 0.01347473))
+mlrcoef_raster<- rasterize(x=mlr[, 1:2], # lon-lat data
+                    y=r_obj, # raster object
+                    field=mlr[,3 ], # vals to fill raster with
+                    fun=mean) # aggregate function
+```
+
+
+```{r}
+proj4string(mlrcoef_raster) <- CRS("+proj=longlat")
+mlrcoef_raster2<-projectRaster(mlrcoef_raster, crs=aea.proj)
+```
+
+
+
+```{r}
+# California Annuals
+setwd("~/Desktop/Legacy Project")
+
+calishapefile<-readOGR(dsn="Shapefiles/CaliforniaAnnual",layer="CaliforniaAnnual")
+calishapefile <-spTransform(calishapefile, CRS(aea.proj))
+
+# Cold Deserts
+coldshapefile<-readOGR(dsn="Shapefiles/ColdDeserts",layer="ColdDeserts")
+coldshapefile <-spTransform(coldshapefile, CRS(aea.proj))
+
+#Northern Mixed Prairies 
+nsshapefile<-readOGR(dsn="Shapefiles/NorthernMixedSubset",layer="NorthernMixedSubset")
+nsshapefile <-spTransform(nsshapefile, CRS(aea.proj))
+
+#hot deserts
+setwd("~/Desktop/Legacy Project")
+hotshapefile<-readOGR(dsn="Shapefiles/hot deserts",layer="hot_deserts")
+hotshapefile <-spTransform(hotshapefile, CRS(aea.proj))
+
+#sgs
+sgsshapefile<-readOGR(dsn="Shapefiles/sgs",layer="sgs_2")
+sgsshapefile <-spTransform(sgsshapefile, CRS(aea.proj))
+
+```
+
+
+
+
+```{r}
+library(png)
+library(grid)
+library(sf)
+#create map of ecoregions and export as JPEG
+jpeg("map of ecoregions.jpeg",
+     width=10,
+     height=8,
+     units="in",
+     res=300)
+
+plot(states_all_sites, lwd = 1)
+plot(calishapefile,col='darkorchid', lwd = .1,add=TRUE)
+plot(coldshapefile, col='skyblue', lwd = .1,add=TRUE)
+plot(nsshapefile,col='darkolivegreen3', lwd = .1,add=TRUE)
+plot(sgsshapefile,col='gold', lwd = .1,add=TRUE)
+plot(hotshapefile,col='indianred', lwd = .1,add=TRUE)
+
+legend('bottomleft', legend=c("California annuals","Northern mixed prairies",
+                              "Cold Deserts ","Shortgrass steppe", "Hot deserts"),
+       col=c("darkorchid", "darkolivegreen3","skyblue","gold","indianred"), lty=1,
+       bty='n',lwd=2,cex=1.60,box.lty=0, )
+
+dev.off()
+```
+
+```{r}
+
+# Load and display the hypothesis figure and ecoregion map as JPEG
+setwd("~/Desktop")
+image1 <- image_read("hyp.figure.jpeg")  # Replace with the actual path to your first image
+image2 <- image_read("map of ecoregions.jpeg")  # Replace with the actual path to your second image
+
+# Create labels for the images
+label1 <- "(a)"
+label2 <- "(b)"
+
+# Create grid plots for the images and labels
+grid1 <- grobTree(
+  rasterGrob(image1),
+  textGrob(label1, x = 0.05, y = 0.8, hjust = 0, vjust = 1, gp = gpar(fontsize = 14)))
+
+grid2 <- grobTree(
+  rasterGrob(image2),
+  textGrob(label2, x = 0.05, y = 0.8, hjust = 0, vjust = 1, gp = gpar(fontsize = 14)))
+
+#create and export figure 1
+jpeg("map of ecoregions and hyp.jpeg",
+     width=10,
+     height=8,
+     units="in",
+     res=300)
+# Combine the grid plots into a double-panel figure
+double_panel_figure <- grid.arrange(grid1, grid2, ncol = 2)
+dev.off()
+
+
+```
+
+
+
+
