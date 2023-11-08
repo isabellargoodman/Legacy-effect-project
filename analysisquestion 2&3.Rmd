@@ -15,20 +15,15 @@ library(plotrix)
 setwd("~/Desktop/Legacy Project")
 legacydata<-readRDS("legacydata.rds")
 
-MAP<-legacydata%>%
-  group_by(x,y,ecoregion)%>%
-  summarise_at(vars(PPT),
-               list(MAP = mean))
-legacydata<-left_join(x=legacydata, y=MAP, by=c("x", "y", "ecoregion")) 
-
 #Create a column for whether or not an observation falls above or below MAP 
 legacydata<-legacydata%>%
    mutate(above_below = case_when(
      (PPT>MAP)~"above",
      (PPT<MAP)~"below"))
 
-legacydata$herb<-legacydata$afgNPP+legacydata$pfgNPP
-legacydata$fracHERB<-legacydata$herb/legacydata$NPP
+legacydata$herbaceousNPP<-legacydata$afgNPP+legacydata$pfgNPP
+legacydata$fracHERB<-legacydata$herbaceousNPP/legacydata$NPP
+
 ```
 
 ```{r}
@@ -56,7 +51,7 @@ lm_herb_rsquared<-list()
 
 
 ```{r}
-for(i in 1:1000)
+for(i in 1:5)
 {
   # Stratify by region and the MAP of the region #
   test.strat.northern_mixed<-stratified(northern_ecoregion, "above_below", 0.0001)
@@ -90,22 +85,22 @@ lm_herb_rsquared[[i]]<-(df.r.squared.create(lm_herb))
 
 
 ```{r}
-write_rds(lm_map_coef, "lm_map_coef.rds")
-write_rds(lm_currentPPT_coef, "lm_currentPPT_coef.rds")
-write_rds(lm_herb_coef, "lm_herb_coef.rds")
+write_rds(lm_map_coef, "lm_map_coef1.rds")
+write_rds(lm_currentPPT_coef, "lm_currentPPT_coef1.rds")
+write_rds(lm_herb_coef, "lm_herb_coef1.rds")
 
-write_rds(lm_map_aic, "lm_herb_aic.rds")
-write_rds(lm_currentPPT_aic, "lm_currentPPT_aic.rds")
-write_rds(lm_herb_aic, "lm_herb_aic.rds")
+write_rds(lm_map_aic, "lm_herb_ai1c.rds")
+write_rds(lm_currentPPT_aic, "lm_currentPPT_aic1.rds")
+write_rds(lm_herb_aic, "lm_herb_aic1.rds")
 
-write_rds(lm_map_rsquared, "lm_map_rsquared.rds")
-write_rds(lm_currentPPT_rsquared, "lm_currentPPT_rsquared.rds")
-write_rds(lm_herb_rsquared, "lm_herb_rsquared.rds")
+write_rds(lm_map_rsquared, "lm_map_rsquared1.rds")
+write_rds(lm_currentPPT_rsquared, "lm_currentPPT_rsquared1.rds")
+write_rds(lm_herb_rsquared, "lm_herb_rsquared1.rds")
 
 setwd('~/Desktop/Legacy Project')
-lm_map_coef<-readRDS("lm_map_coef.rds")
-lm_herb_coef<-readRDS("lm_herb_coef.rds")
-lm_currentPPT_coef<-readRDS("lm_currentPPT_coef.rds")
+lm_map_coef<-readRDS("lm_map_coef1.rds")
+lm_herb_coef<-readRDS("lm_herb_coef1.rds")
+lm_currentPPT_coef<-readRDS("lm_currentPPT_coef1.rds")
 ```
 
 
@@ -122,15 +117,15 @@ herb_coefficients <-list_to_df_with_ecoregion_herb(lm_herb_coef)
 ```{r}
 #Calculate 99% CIs
 map_ecoregion_spatiotemp_means <-map_coefficients %>%
-  group_by(region) %>%
-  summarise_at(vars(Satiotemporal),
+  group_by(ecoregion) %>%
+  summarise_at(vars(Spatiotemporal),
                 list(mean=mean,
                      se=std.error))
 map_ecoregion_spatiotemp_means$top99<-map_ecoregion_spatiotemp_means$mean+(2.576*map_ecoregion_spatiotemp_means$se)
 map_ecoregion_spatiotemp_means$bottom99<-map_ecoregion_spatiotemp_means$mean-(2.576*map_ecoregion_spatiotemp_means$se)
 
 map_ecoregion_temporal_means <-map_coefficients %>%
-  group_by(region) %>%
+  group_by(ecoregion) %>%
   summarise_at(vars(Temporal),
                 list(mean=mean,
                      se=std.error))
@@ -138,30 +133,32 @@ map_ecoregion_temporal_means$top99<-map_ecoregion_temporal_means$mean+(2.576*map
 map_ecoregion_temporal_means$bottom99<-map_ecoregion_temporal_means$mean-(2.576*map_ecoregion_temporal_means$se)
 
 current_spatiotemp_means <-current_coefficients %>%
-  group_by(region) %>%
-  summarise_at(vars(Temporal.PPTdev),
+  group_by(ecoregion) %>%
+  summarise_at(vars(Spatiotemporal.current),
                 list(mean=mean,
                      se=std.error))
-map_ecoregion_spatiotemp_means$top99<-map_ecoregion_spatiotemp_means$mean+(2.576*map_ecoregion_spatiotemp_means$se)
-map_ecoregion_spatiotemp_means$bottom99<-map_ecoregion_spatiotemp_means$mean-(2.576*map_ecoregion_spatiotemp_means$se)
+current_spatiotemp_means$top99<-current_spatiotemp_means$mean+(2.576*current_spatiotemp_means$se)
+current_spatiotemp_means$bottom99<-current_spatiotemp_means$mean-(2.576*current_spatiotemp_means$se)
 
 current_temp_means <-current_coefficients %>%
-  group_by(region) %>%
-  summarise_at(vars(Temporal.PPTdev),
+  group_by(ecoregion) %>%
+  summarise_at(vars(Temporal.current),
                 list(mean=mean,
                      se=std.error))
+current_temp_means$top99<-current_temp_means$mean+(2.576*current_temp_means$se)
+current_temp_means$bottom99<-current_temp_means$mean-(2.576*current_temp_means$se)
 
 herb_ecoregion_spatiotemp_means <-herb_coefficients %>%
-  group_by(region) %>%
-  summarise_at(vars(herb.temporal),
+  group_by(ecoregion) %>%
+  summarise_at(vars(Spatiotemporal.herb),
                 list(mean=mean,
                      se=std.error))
 herb_ecoregion_spatiotemp_means$top99<-herb_ecoregion_spatiotemp_means$mean+(2.576*herb_ecoregion_spatiotemp_means$se)
 herb_ecoregion_spatiotemp_means$bottom99<-herb_ecoregion_spatiotemp_means$mean-(2.576*herb_ecoregion_spatiotemp_means$se)
 
 herb_ecoregion_temporal_means <-herb_coefficients %>%
-  group_by(region) %>%
-  summarise_at(vars(Temporal),
+  group_by(ecoregion) %>%
+  summarise_at(vars(Temporal.herb),
                 list(mean=mean,
                      se=std.error))
 herb_ecoregion_temporal_means$top99<-herb_ecoregion_temporal_means$mean+(2.576*herb_ecoregion_temporal_means$se)
@@ -173,7 +170,7 @@ herb_ecoregion_temporal_means$bottom99<-herb_ecoregion_temporal_means$mean-(2.57
 ```{r}
 #create figure 4
 mapInteraction<-ggplot()+
-  geom_density(data=map_coefficients, aes(x=Satiotemporal, fill=region,after_stat(scaled)),alpha=.3)+
+  geom_density(data=map_coefficients, aes(x=Spatiotemporal, fill=ecoregion,after_stat(scaled)),alpha=.4)+
   scale_fill_manual(values=c("indianred","skyblue","darkorchid","darkolivegreen3","gold"),
                        labels=c("Hot Deserts","Cold Deserts","California Annuals", "Northern Mixed Prairies","Shortgrass Steppe"))+
  xlab("Change in legacy effect \n per mm MAP")+
@@ -181,13 +178,14 @@ mapInteraction<-ggplot()+
  theme_classic() + 
   labs(fill = "Ecoregion")+
   theme(legend.key.size = unit(.75, 'cm'), #change legend key size
-        legend.title = element_text(size=20), #change legend title font size
-        legend.text = element_text(size=18))+ 
+        legend.title = element_text(size=18), #change legend title font size
+        legend.text = element_text(size=16))+ 
   scale_y_continuous(expand = c(0,0),limits = c(0,1.02))+
-  theme(axis.title.x =element_text( size=25),
-        axis.title.y = element_text(size=25),
-        axis.text.x = element_text(size=20),
-        axis.text.y = element_text(size=20))+
+  scale_x_continuous(limits = c(-.002,.004))+
+  theme(axis.title.x =element_text( size=20),
+        axis.title.y = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16))+
   theme(legend.position = c(.835,.6))+
   theme(
     strip.background =element_rect(fill="white"),
@@ -204,21 +202,22 @@ mapInteraction
 ```{r}
 #create figure 4
 herbInteraction<-ggplot()+
-  geom_density(data=herb_coefficients, aes(x=herb.temporal, fill=region,after_stat(scaled)),alpha=.3)+
+  geom_density(data=herb_coefficients, aes(x=Spatiotemporal.herb, fill=ecoregion,after_stat(scaled)),alpha=.4)+
   scale_fill_manual(values=c("indianred","skyblue","darkorchid","darkolivegreen3","gold"),
                        labels=c("Hot Deserts","Cold Deserts","California Annuals", "Northern Mixed Prairies","Shortgrass Steppe"))+
  xlab("Change in legacy effect per \n % change in herbaceous NPP")+
  ylab("Probability Density")+
  theme_classic() + 
   labs(fill = "Ecoregion")+
-  theme(legend.key.size = unit(.75, 'cm'), #change legend key size
-        legend.title = element_text(size=20), #change legend title font size
-        legend.text = element_text(size=18))+ 
+ theme(legend.key.size = unit(.75, 'cm'), #change legend key size
+        legend.title = element_text(size=18), #change legend title font size
+        legend.text = element_text(size=16))+ 
   scale_y_continuous(expand = c(0,0),limits = c(0,1.02))+
-  theme(axis.title.x =element_text( size=25),
-        axis.title.y = element_text(size=25),
-        axis.text.x = element_text(size=20),
-        axis.text.y = element_text(size=20))+
+  scale_x_continuous(limits = c(-3,2))+
+  theme(axis.title.x =element_text( size=20),
+        axis.title.y = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16))+
   theme(
     strip.background =element_rect(fill="white"),
     strip.text = element_text(size=15),
@@ -231,13 +230,13 @@ herbInteraction
 
 ```{r}
 #Create supporting figure 3 
-jpeg("currentPPT figure.jpeg",
-     width=8,
-     height=7,
-     units="in",
-     res=300)
+#jpeg("currentPPT figure.jpeg",
+ #    width=8,
+  #   height=7,
+   #  units="in",
+    # res=300)
 currentInteraction<-ggplot()+
-  geom_density(data=current_coefficients, aes(x=Temporal.PPTdev, fill=region,after_stat(scaled)),alpha=.3)+
+  geom_density(data=current_coefficients, aes(x=Spatiotemporal.current, fill=ecoregion,after_stat(scaled)),alpha=.4)+
   scale_fill_manual(values=c("indianred","skyblue","darkorchid","darkolivegreen3","gold"),
                        labels=c("Hot Deserts","Cold Deserts","California Annuals", "Northern Mixed Prairies","Shortgrass Steppe"))+
  xlab("Change in sensitivity per legacy effect")+
@@ -248,7 +247,7 @@ currentInteraction<-ggplot()+
         legend.title = element_text(size=18), #change legend title font size
         legend.text = element_text(size=16))+ 
   scale_y_continuous(expand = c(0,0),limits = c(0,1.02))+
-    scale_x_continuous(expand = c(0,0),limits = c(-0.0007,.0025))+
+   # scale_x_continuous(expand = c(0,0),limits = c(-0.0007,.0025))+
   theme(axis.title.x =element_text( size=25),
         axis.title.y = element_text(size=25),
         axis.text.x = element_text(size=20),
@@ -262,12 +261,13 @@ currentInteraction<-ggplot()+
     axis.line.x = element_line(colour = "black"),
     axis.line.y = element_line(colour = "black"))
 currentInteraction
-dev.off()
+#dev.off()
 ```
 
 ```{r}
 #create figure 4
-jpeg("2 interaction figures.jpeg",
+library(ggpubr)
+jpeg("2panel Interactions.jpeg",
      width=18,
      height=10,
      units="in",
@@ -281,13 +281,8 @@ dev.off()
 
 ```{r}
 #create figure 3b
-jpeg("PPTdev.temporal.jpeg",
-     width=10,
-     height=8,
-     units="in",
-     res=300)
 effect_byEco<-ggplot()+
-  geom_density(data=current_coefficients, aes(x=Temporal.PPTdev, fill=region, after_stat(scaled)), alpha=.4)+
+  geom_density(data=map_coefficients, aes(x=Temporal, fill=ecoregion, after_stat(scaled)), alpha=.4)+
   scale_fill_manual(values=c("indianred","skyblue","darkorchid","darkolivegreen3","gold"),
                        labels=c("Hot Deserts","Cold deserts","California Annuals", "Northern Mixed \n Prairies","Shortgrass Steppe"))+
  xlab("Effect of Previous-year NPP")+
@@ -298,7 +293,7 @@ effect_byEco<-ggplot()+
         legend.title = element_text(size=18), #change legend title font size
         legend.text = element_text(size=16))+ 
   scale_y_continuous(expand = c(0,0),limits = c(0,1.05))+
-  scale_x_continuous(expand = c(0,0),limits = c(-.5,2.01))+
+  scale_x_continuous(expand = c(0,0),limits = c(-2,2))+
   theme(axis.title.x =element_text( size=20),
         axis.title.y = element_text(size=20),
         axis.text.x = element_text(size=15),
@@ -311,6 +306,6 @@ effect_byEco<-ggplot()+
     axis.line.x = element_line(colour = "black"),
     axis.line.y = element_line(colour = "black"))
 effect_byEco
-dev.off()
+
 ```
 
