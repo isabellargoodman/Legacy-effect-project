@@ -16,7 +16,7 @@ library(gridExtra)
 library(magick)
  
 #loaddata
-setwd("~/Desktop/Legacy Project")
+setwd("~/Desktop")
 legacydata<-readRDS("legacydata.rds")
 mlr<-readRDS("mlrmodel_coef4.rds")
 ```
@@ -85,24 +85,23 @@ library(png)
 library(grid)
 library(sf)
 #create map of ecoregions and export as JPEG
+
 jpeg("map of ecoregions.jpeg",
      width=10,
      height=8,
      units="in",
      res=300)
-
 plot(states_all_sites, lwd = 1)
-plot(calishapefile,col='darkorchid', lwd = .1,add=TRUE)
-plot(coldshapefile, col='skyblue', lwd = .1,add=TRUE)
-plot(nsshapefile,col='darkolivegreen3', lwd = .1,add=TRUE)
-plot(sgsshapefile,col='gold', lwd = .1,add=TRUE)
-plot(hotshapefile,col='indianred', lwd = .1,add=TRUE)
+plot(calishapefile,col='grey', lwd = .1,add=TRUE)
+plot(coldshapefile, col='gold', lwd = .1,add=TRUE)
+plot(nsshapefile,col='lightblue', lwd = .1,add=TRUE)
+plot(sgsshapefile,col='green4', lwd = .1,add=TRUE)
+plot(hotshapefile,col='firebrick3', lwd = .1,add=TRUE)
 
 legend('bottomleft', legend=c("California annuals","Northern mixed prairies",
                               "Cold Deserts ","Shortgrass steppe", "Hot deserts"),
-       col=c("darkorchid", "darkolivegreen3","skyblue","gold","indianred"), lty=1,
+       col=c("grey", "lightblue","gold","green4","firebrick3"), lty=1,
        bty='n',lwd=2,cex=1.60,box.lty=0, )
-
 dev.off()
 ```
 
@@ -120,11 +119,11 @@ label2 <- "(b)"
 # Create grid plots for the images and labels
 grid1 <- grobTree(
   rasterGrob(image1),
-  textGrob(label1, x = 0.05, y = 0.8, hjust = 0, vjust = 1, gp = gpar(fontsize = 14)))
+  textGrob(label1, x = 0.05, y = 0.75, hjust = 0, vjust = 1, gp = gpar(fontsize = 14)))
 
 grid2 <- grobTree(
   rasterGrob(image2),
-  textGrob(label2, x = 0.05, y = 0.8, hjust = 0, vjust = 1, gp = gpar(fontsize = 14)))
+  textGrob(label2, x = 0.05, y = 0.75, hjust = 0, vjust = 1, gp = gpar(fontsize = 14)))
 
 #create and export figure 1
 jpeg("map of ecoregions and hyp.jpeg",
