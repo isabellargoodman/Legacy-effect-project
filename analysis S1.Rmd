@@ -13,21 +13,9 @@ library(plotrix)
 library(ggpubr)
 
 #Load data
-setwd("~/Desktop/Legacy Project")
-legacydata<-readRDS("legacydata.rds")
+setwd("~/Desktop")
+legacydata<-readRDS("legacydata1.rds")
 
-#Create Mean annual precip variable
-MAP<-legacydata%>%
-  group_by(x,y,ecoregion)%>%
-  summarise_at(vars(PPT),
-               list(MAP = mean))
-legacydata<-left_join(x=legacydata, y=MAP, by=c("x", "y", "ecoregion")) 
- 
-#Create a column for whether or not an observation falls above or below MAP 
-legacydata<-legacydata%>%
-   mutate(above_below = case_when(
-     (PPT>MAP)~"above",
-     (PPT<MAP)~"below"))
 
 ```
 
@@ -88,6 +76,21 @@ lm_NPP_rsquared[[i]]<-(df.r.squared.create(lm_NPP))
 lm_TEMP_rsquared[[i]]<-(df.r.squared.create(lm_TEMP))
 }
 ```
+
+```{r}
+write_rds(lm_PPT_coef,"lm_PPT_coef.rds")
+write_rds(lm_NPP_coef,"lm_NPP_coef.rds")
+write_rds(lm_TEMP_coef,"lm_TEMP_coef.rds")
+
+write_rds(lm_PPT_aic,"lm_PPT_aic.rds")
+write_rds(lm_NPP_aic,"lm_NPP_aic.rds")
+write_rds(lm_TEMP_aic,"lm_TEMP_rsquared.rds")
+
+write_rds(lm_PPT_rsquared,"lm_PPT_rsquared.rds")
+write_rds(lm_NPP_rsquared,"lm_NPP_rsquared.rds")
+write_rds(lm_TEMP_rsquared,"lm_TEMP_rsquared.rds")
+```
+
 
 ```{r}
 
@@ -215,6 +218,7 @@ rsquaredaic<-ggarrange(AICfig + rremove("xlab")+rremove("x.text"), rsquaredfigur
 rsquaredaic
 dev.off()
 ```
+
 
 ```{r}
 #calculate 99% CIs 
