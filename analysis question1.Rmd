@@ -1,14 +1,9 @@
 ---
-title: "secondary question 2"
-output: html_document
-date: "2023-09-04"
-------
 title: "question 1 secondary"
 output: html_document
 date: "2023-08-24"
 ---
 ```{r}
-
 #Load libraries
 library(dplyr)
 library(tidyverse)
@@ -18,21 +13,8 @@ library(ggplot2)
 library(ggpubr)
 
 #Load data
-setwd("~/Desktop/Legacy Project")
-legacydata<-readRDS("legacydata.rds")
-
-#Create Mean annual precip variable
-MAP<-legacydata%>%
-  group_by(x,y,ecoregion)%>%
-  summarise_at(vars(PPT),
-               list(MAP = mean))
-legacydata<-left_join(x=legacydata, y=MAP, by=c("x", "y", "ecoregion")) 
- 
-#Create a column for whether or not an observation falls above or below MAP 
-legacydata<-legacydata%>%
-   mutate(above_below = case_when(
-     (PPT>MAP)~"above",
-     (PPT<MAP)~"below"))
+setwd("~/Desktop")
+legacydata<-readRDS("legacydata1.rds")
 
 ```
 

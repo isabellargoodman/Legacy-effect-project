@@ -12,18 +12,8 @@ library(splitstackshape)
 library(plotrix)
 
 #Load data
-setwd("~/Desktop/Legacy Project")
+setwd("~/Desktop")
 legacydata<-readRDS("legacydata.rds")
-
-#Create a column for whether or not an observation falls above or below MAP 
-legacydata<-legacydata%>%
-   mutate(above_below = case_when(
-     (PPT>MAP)~"above",
-     (PPT<MAP)~"below"))
-
-legacydata$herbaceousNPP<-legacydata$afgNPP+legacydata$pfgNPP
-legacydata$fracHERB<-legacydata$herbaceousNPP/legacydata$NPP
-
 ```
 
 ```{r}
@@ -51,7 +41,7 @@ lm_herb_rsquared<-list()
 
 
 ```{r}
-for(i in 1:5)
+for(i in 1:1000)
 {
   # Stratify by region and the MAP of the region #
   test.strat.northern_mixed<-stratified(northern_ecoregion, "above_below", 0.0001)
