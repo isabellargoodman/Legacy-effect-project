@@ -1,0 +1,493 @@
+---
+title: "functions"
+output: html_document
+date: "2023-03-20"
+---
+
+```{r}
+above_below_map <- function(x){
+  
+  mean.mm <- round(mean(x$mm),digits=1)
+  below <- x %>% dplyr::filter(mm < mean.mm)
+  below$map <- 'below'
+  itiv
+  above <- x %>% dplyr::filter(mm > mean.mm)
+  above$map <- 'above'
+  above_below <-rbind(above,below)
+  
+  return(above_below)
+  
+}
+
+# Produce data frame from model coefficients ----
+
+df.coef.create<-function(x){
+  df<-data.frame(x$coefficients)
+  df$id = i
+  
+  return(df)
+}
+
+#
+#
+
+# Data frame from model AIC values ----
+
+# Within-loop
+df.aic.create<-function(x){
+  df<-data.frame(AIC(x))
+  df$id = i
+  
+  return(df)
+}
+
+# Post-loop
+bind.aic<-function(x){
+  
+  x.binded <- do.call("rbind", x)
+  colnames(x.binded)  <- c("aic","run.id")
+  
+  return(x.binded)
+}
+
+#
+#
+
+# Produce data frame from model BIC values -----
+
+# Within-loop
+df.bic.create<-function(x){
+  df<-data.frame(BIC(x))
+  df$id = i
+  
+  return(df)
+}
+
+# Post-loop
+bind.bic<-function(x){
+  
+  x.binded <- do.call("rbind", x)
+  colnames(x.binded)  <- c("bic","run.id")
+  
+  return(x.binded)
+}
+
+#
+#
+
+# Produce data frame from model r-squared values ----
+
+# Within-loop
+df.r.squared.create<-function(x){
+  df<-data.frame(summary(x)$r.squared)
+  df$id = i
+  
+  return(df)
+}
+
+# Post-loop
+bind.r.squared<-function(x){
+  
+  x.binded <- do.call("rbind", x)
+  colnames(x.binded)  <- c("r.squared","run.id")
+  
+  return(x.binded)
+}
+
+#
+#
+
+# Compare R2 values for full model to versions that Hold temporal and spatiotemporal components constant ----
+
+#modified (in progress) version of original for different main effects...
+compare_fit_2 <-function(model,data,metric,main){
+  
+  
+  # # metric = "R2" or "RMSE"
+  
+  # Get predictions from full model (with space*time interaction)
+  data$pred_intX <- predict(model)
+  
+  if(main=='diff'){
+    
+    
+    #just spatial
+    data$pred_s <- coef(model)[1] + coef(model)[2]*data$mm.y + coef(model)[4]*data$perc_herb_mean
+    
+    #spatial and temporal
+    data$pred_st <- coef(model)[1] + coef(model)[2]*data$mm.y + coef(model)[3]*data$mm.dev +
+      coef(model)[4]*data$perc_herb_mean
+    
+  }
+  
+  else{
+    
+    #just spatial
+    data$pred_s <- coef(model)[1] + coef(model)[2]*data$mm.y
+    
+    #spatial and temporal   
+    data$pred_st <- coef(model)[1] + coef(model)[2]*data$mm.y + coef(model)[3]*data$mm.dev
+  }
+  
+  attach(data,warn.conflicts = FALSE)
+  if(metric=="RMSE"){
+    out <- c(sqrt(mean((npp.x-pred_intX)^2)),
+             sqrt(mean((npp.x-pred_st)^2)),
+             sqrt(mean((npp.x-pred_s)^2)))
+  }else{
+    out <- c(cor(npp.x,pred_intX,method="pearson")^2,
+             cor(npp.x,pred_st,method="pearson")^2,
+             cor(npp.x,pred_s,method="pearson")^2)
+  }
+  detach(data)
+  
+  names(out) <- c("intX","S&T","S")
+  
+  return(out)
+  
+}
+
+# 95 confidence interval from a normal distribution
+error.95 <-function(x) {
+  n = length(x)
+  se = sd(x)/sqrt(n)
+  error <- qnorm(0.975)*se
+  
+  return(error)
+}
+
+#
+#
+
+# Remove repetitive code by selecting the new columns for each coefficient ----
+select_columns <-function(x) { 
+  
+  regions<-subset(x,select=c('hot','cold','cali','northern',
+                             'sgs','run.id'))
+  return(regions)
+  
+}
+
+# Some initial cleanup of the lists
+list_to_df_initial <- function(x) {
+  
+  df.coefficients <- do.call("rbind", x)
+  df.coefficients.2 <- cbind(rownames(df.coefficients), data.frame(df.coefficients, row.names=NULL))
+  
+  #rename columns and get rid of row name junk
+  colnames(df.coefficients.2)  <- c("predictor","coefficient","run.id")
+  df.coefficients.2$predictor<-gsub('[[:digit:]]+', '', df.coefficients.2$predictor)
+  df.coefficients.2$predictor<-gsub(':', '_', df.coefficients.2$predictor)
+  df.coefficients.2$predictor<-gsub('MAP', 'spatial', df.coefficients.2$predictor)
+  df.coefficients.2$predictor<-gsub('fracHERB', 'herb', df.coefficients.2$predictor)
+  df.coefficients.2$predictor<-gsub('lagNPPdev', 'temporal', df.coefficients.2$predictor)
+  df2<-reshape(df.coefficients.2, idvar = "run.id", timevar = "predictor", direction = "wide")
+  colnames(df2)[colnames(df2)=="coefficient.(Intercept)"] <- "intercept"
+  rm(df.coefficients.2)
+  return(df2)
+  
+  
+}
+
+# When ecoregion is not used as a covariate, use this one
+
+list_to_df <- function(x,region=T) {
+  
+  df2<-list_to_df_initial(x)
+  
+  if(region==T){
+    
+    df2 <- df2 %>%
+      select(run.id, coefficient.temporal_herb)
+    return(df2)
+    
+  }else{
+    
+    return(df2)
+  }
+  
+}
+
+```
+
+```{r}
+list_to_df_with_ecoregion_herb <- function(x,veg=T,full=F) {
+  
+  #slightly ammended version to deal with mm.y and per_herb difference in model 1 and 3
+  
+  df2<-list_to_df_initial(x) #x
+
+  #temporal slopes
+  
+  #california annuals
+  df2$cali <- df2$coefficient.ecoregioncali_temporal
+  #cold deserts
+  df2$cold <- df2$coefficient.ecoregioncold_temporal
+  #hot_deserts
+  df2$hot <-  df2$coefficient.ecoregionhot_temporal
+  #northern mixed
+  df2$northern <- df2$coefficient.ecoregionnorthern_temporal
+  #sgs
+  df2$sgs <- df2$coefficient.ecoregionsgs_temporal
+  
+  temporal_slopes<-select_columns(df2)
+  
+  #change to long format
+  
+  data_long_temporal <- gather(temporal_slopes, region, coefficient,-run.id, factor_key=TRUE)
+  data_long_temporal$model<-'Temporal.herb'
+
+
+  # spatiotemporal interaction with HERB
+    
+    #california annuals
+    df2$cali<- df2$coefficient.ecoregioncali_herb_temporal
+    #cold deserts
+    df2$cold <- df2$coefficient.ecoregioncold_herb_temporal
+    #hot_deserts
+    df2$hot<-  df2$coefficient.ecoregionhot_herb_temporal
+    #northern mixed
+    df2$northern<- df2$coefficient.ecoregionnorthern_herb_temporal
+    #sgs
+    df2$sgs <- df2$coefficient.ecoregionsgs_herb_temporal
+
+    temporal_spatial_slopes<-select_columns(df2)
+    
+    #change to long format
+    
+    data_long_temporal_spatial <- gather(temporal_spatial_slopes, region, coefficient,-run.id, factor_key=TRUE)
+    data_long_temporal_spatial$model<-'Spatiotemporal.herb'
+    
+
+  #california annuals
+  df2$cali <- df2$intercept
+  #cold deserts
+  df2$cold <- df2$intercept + df2$coefficient.ecoregioncold
+  #hot_deserts
+  df2$hot <-  df2$intercept  + df2$coefficient.ecoregionhot
+  #northern mixed
+  df2$northern <- df2$intercept  + df2$coefficient.ecoregionnorthern
+  #sgs
+  df2$sgs<- df2$intercept + df2$coefficient.ecoregionsgs
+  
+  vegetation_intercepts<-select_columns(df2)
+  
+  #change to long format
+  data_long_intercepts <- gather(vegetation_intercepts, region, coefficient,-run.id, factor_key=TRUE)
+  data_long_intercepts$model<-'Intercept.heb'
+  
+  #all coefficient for each veg type
+  coefficients_full<-rbind(data_long_intercepts,data_long_temporal_spatial,data_long_temporal)
+  
+  #for wide format
+  coefficients_wide<- spread(coefficients_full, model, coefficient)
+  
+  #region_map<-aggregate(mm.x~region,mean,data=rangeland_npp_covariates)
+  region_map<-aggregate(MAP~ecoregion,mean,data=legacydata) #either way averaging works out same
+  region_map$MAP<-round(region_map$MAP,1)
+  region_map<-region_map[-c(2)]
+  coefficients_wide<-coefficients_wide%>%
+    rename(ecoregion=region)
+  
+  coefficients_wide_map<-merge(coefficients_wide,region_map,by=c('ecoregion'))
+  
+  
+  return(coefficients_wide_map)
+}
+```
+
+```{r}
+list_to_df_with_ecoregion_map <- function(x,veg=T,full=F) {
+  
+  #slightly ammended version to deal with mm.y and per_herb difference in model 1 and 3
+  
+  df2<-list_to_df_initial(lm_map_coef) #x
+  
+  #spatial slopes
+  
+  #california
+  df2$cali <- df2$coefficient.ecoregioncali_spatial
+  #cold deserts
+  df2$cold <-  df2$coefficient.ecoregioncold_spatial
+  #hot_deserts
+  df2$hot<-  df2$coefficient.ecoregionhot_spatial
+  #northern mixed
+  df2$northern <- df2$coefficient.ecoregionnorthern_spatial
+  #sgs
+  df2$sgs <- df2$coefficient.ecoregionsgs_spatial
+  
+  spatial_slopes<-select_columns(df2)
+  
+  #change to long format
+  data_long_spatial <- gather(spatial_slopes, region, coefficient,-run.id, factor_key=TRUE)
+  data_long_spatial$model<-'Spatial'
+  
+  #temporal slopes
+  
+  #california annuals
+  df2$cali <- df2$coefficient.ecoregioncali_temporal
+  #cold deserts
+  df2$cold <- df2$coefficient.ecoregioncold_temporal
+  #hot_deserts
+  df2$hot <-  df2$coefficient.ecoregionhot_temporal
+  #northern mixed
+  df2$northern <- df2$coefficient.ecoregionnorthern_temporal
+  #sgs
+  df2$sgs <- df2$coefficient.ecoregionsgs_temporal
+  
+  temporal_slopes<-select_columns(df2)
+  
+  #change to long format
+  
+  data_long_temporal <- gather(temporal_slopes, region, coefficient,-run.id, factor_key=TRUE)
+  data_long_temporal$model<-'Temporal'
+  
+  #merge the spatial and temporal coefficient dataframes
+  rbind_spatial_temporal<-rbind(data_long_spatial,data_long_temporal)
+  
+
+  # spatiotemporal interaction with MAP
+    
+    #california annuals
+    df2$cali<- df2$coefficient.ecoregioncali_spatial_temporal
+    #cold deserts
+    df2$cold <- df2$coefficient.ecoregioncold_spatial_temporal
+    #hot_deserts
+    df2$hot<-  df2$coefficient.ecoregionhot_spatial_temporal
+    #northern mixed
+    df2$northern<- df2$coefficient.ecoregionnorthern_spatial_temporal
+    #sgs
+    df2$sgs <- df2$coefficient.ecoregionsgs_spatial_temporal
+
+    temporal_spatial_slopes<-select_columns(df2)
+    
+    #change to long format
+    
+    data_long_temporal_spatial <- gather(temporal_spatial_slopes, region, coefficient,-run.id, factor_key=TRUE)
+    data_long_temporal_spatial$model<-'Spatiotemporal'
+    
+
+  #california annuals
+  df2$cali <- df2$intercept
+  #cold deserts
+  df2$cold <- df2$intercept + df2$coefficient.ecoregioncold
+  #hot_deserts
+  df2$hot <-  df2$intercept  + df2$coefficient.ecoregionhot
+  #northern mixed
+  df2$northern <- df2$intercept  + df2$coefficient.ecoregionnorthern
+  #sgs
+  df2$sgs<- df2$intercept + df2$coefficient.ecoregionsgs
+  
+  vegetation_intercepts<-select_columns(df2)
+  
+  #change to long format
+  data_long_intercepts <- gather(vegetation_intercepts, region, coefficient,-run.id, factor_key=TRUE)
+  data_long_intercepts$model<-'Intercept'
+  
+  #all coefficient for each veg type
+  coefficients_full<-rbind(data_long_intercepts,data_long_temporal_spatial,rbind_spatial_temporal)
+  
+  #for wide format
+  coefficients_wide<- spread(coefficients_full, model, coefficient)
+  
+  #region_map<-aggregate(mm.x~region,mean,data=rangeland_npp_covariates)
+  region_map<-aggregate(MAP~ecoregion,mean,data=legacydata) #either way averaging works out same
+  region_map$MAP<-round(region_map$MAP,1)
+  region_map<-region_map[-c(2)]
+  coefficients_wide<-coefficients_wide%>%
+    rename(ecoregion=region)
+  
+  coefficients_wide_map<-merge(coefficients_wide,region_map,by=c('ecoregion'))
+  
+  
+  return(coefficients_wide_map)
+}
+  
+```
+
+```{r}
+list_to_df_with_ecoregion_current <- function(x,veg=T,full=F) {
+  
+  #slightly ammended version to deal with mm.y and per_herb difference in model 1 and 3
+  
+  df2<-list_to_df_initial(x) #x
+
+  #temporal slopes
+  
+  #california annuals
+  df2$cali <- df2$coefficient.ecoregioncali_temporal
+  #cold deserts
+  df2$cold <- df2$coefficient.ecoregioncold_temporal
+  #hot_deserts
+  df2$hot <-  df2$coefficient.ecoregionhot_temporal
+  #northern mixed
+  df2$northern <- df2$coefficient.ecoregionnorthern_temporal
+  #sgs
+  df2$sgs <- df2$coefficient.ecoregionsgs_temporal
+  
+  temporal_slopes<-select_columns(df2)
+  
+  #change to long format
+  
+  data_long_temporal <- gather(temporal_slopes, region, coefficient,-run.id, factor_key=TRUE)
+  data_long_temporal$model<-'Temporal.current'
+
+
+  # spatiotemporal interaction with HERB
+    
+    #california annuals
+    df2$cali<- df2$coefficient.ecoregioncali_PPTdev_temporal
+    #cold deserts
+    df2$cold <- df2$coefficient.ecoregioncold_PPTdev_temporal
+    #hot_deserts
+    df2$hot<-  df2$coefficient.ecoregionhot_PPTdev_temporal
+    #northern mixed
+    df2$northern<- df2$coefficient.ecoregionnorthern_PPTdev_temporal
+    #sgs
+    df2$sgs <- df2$coefficient.ecoregionsgs_PPTdev_temporal
+
+    temporal_spatial_slopes<-select_columns(df2)
+    
+    #change to long format
+    
+    data_long_temporal_spatial <- gather(temporal_spatial_slopes, region, coefficient,-run.id, factor_key=TRUE)
+    data_long_temporal_spatial$model<-'Spatiotemporal.current'
+    
+
+  #california annuals
+  df2$cali <- df2$intercept
+  #cold deserts
+  df2$cold <- df2$intercept + df2$coefficient.ecoregioncold
+  #hot_deserts
+  df2$hot <-  df2$intercept  + df2$coefficient.ecoregionhot
+  #northern mixed
+  df2$northern <- df2$intercept  + df2$coefficient.ecoregionnorthern
+  #sgs
+  df2$sgs<- df2$intercept + df2$coefficient.ecoregionsgs
+  
+  vegetation_intercepts<-select_columns(df2)
+  
+  #change to long format
+  data_long_intercepts <- gather(vegetation_intercepts, region, coefficient,-run.id, factor_key=TRUE)
+  data_long_intercepts$model<-'Intercept.current'
+  
+  #all coefficient for each veg type
+  coefficients_full<-rbind(data_long_intercepts,data_long_temporal_spatial,data_long_temporal)
+  
+  #for wide format
+  coefficients_wide<- spread(coefficients_full, model, coefficient)
+  
+  #region_map<-aggregate(mm.x~region,mean,data=rangeland_npp_covariates)
+  region_map<-aggregate(MAP~ecoregion,mean,data=legacydata) #either way averaging works out same
+  region_map$MAP<-round(region_map$MAP,1)
+  region_map<-region_map[-c(2)]
+  coefficients_wide<-coefficients_wide%>%
+    rename(ecoregion=region)
+  
+  coefficients_wide_map<-merge(coefficients_wide,region_map,by=c('ecoregion'))
+  
+  
+  return(coefficients_wide_map)
+}
+```
+
