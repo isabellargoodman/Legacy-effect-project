@@ -2,7 +2,8 @@
 Code for 'Ubiqutous legacy effects on net primry production across western US drylands'
 
 # Step-1 
-run main analysis 
+run main analysis sections.
+
 analysis S1.Rmd: This markdown file includes analysis and the bootstrapping loop for supporting information analysis S1 and for creating and exporting supporting figure 1.
 
 analysis question 1.Rmd: This markdown file includes analysis and the bootstraping loop for answering question 1: whether or not previous-year NPP is still relevent in the model after inluding current-year PPT. ALso inlcudes code for supporitng figure 2.
