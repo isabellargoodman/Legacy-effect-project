@@ -1,0 +1,159 @@
+---
+title: "cold deserts analysis"
+output: html_document
+date: "2023-10-02"
+---
+
+```{r}
+
+#Load libraries
+library(dplyr)
+library(tidyverse)
+library(splitstackshape)
+library(plotrix)
+library(ggplot2)
+
+#Load data
+setwd("~/Desktop/Legacy Project")
+legacydata<-readRDS("legacydata.rds")
+
+MAP<-legacydata%>%
+  group_by(x,y,ecoregion)%>%
+  summarise_at(vars(PPT),
+               list(MAP = mean))
+legacydata<-left_join(x=legacydata, y=MAP, by=c("x", "y", "ecoregion")) 
+
+#Create a column for whether or not an observation falls above or below MAP 
+legacydata<-legacydata%>%
+   mutate(above_below = case_when(
+     (PPT>MAP)~"above",
+     (PPT<MAP)~"below"))
+
+legacydata$herb<-legacydata$afgNPP+legacydata$pfgNPP
+legacydata$fracHERB<-legacydata$herb/legacydata$NPP
+legacydata$fracAFG<-legacydata$afgNPP/legacydata$NPP
+legacydata$fracPFG<-legacydata$pfgNPP/legacydata$NPP
+```
+
+```{r}
+#Subset data by ecoregion
+cali_ecoregion<-legacydata[legacydata$ecoregion=='cali',]
+cold_ecoregion<-legacydata[legacydata$ecoregion=='cold',]
+northern_ecoregion<-legacydata[legacydata$ecoregion=='northern',]
+sgs_ecoregion<-legacydata[legacydata$ecoregion=='sgs',]
+hot_ecoregion<-legacydata[legacydata$ecoregion=='hot',]
+```
+
+```{r}
+lm_annuals_coef<-list()
+lm_herbaceous_coef<-list()
+lm_perennials_coef<-list()
+
+lm_annuals_aic<-list()
+lm_herbaceous_aic<-list()
+lm_perennials_aic<-list()
+
+lm_annuals_rsquared<-list()
+lm_herbaceous_rsquared<-list()
+lm_perennials_rsquared<-list()
+```
+
+```{r}
+for(i in 1:500)
+{
+test.strat.cold_deserts<-stratified(cold_ecoregion,"above_below", 0.0001)
+
+lm_herbaceous<-lm(NPPdev~PPTdev+fracHERB+lagNPPdev+fracHERB:lagNPPdev, data=test.strat.cold_deserts)
+
+lm_annuals<-lm(NPPdev~PPTdev+fracAFG+lagNPPdev+fracAFG:lagNPPdev, data=test.strat.cold_deserts)
+
+lm_perennials<-lm(NPPdev~PPTdev+fracPFG+lagNPPdev+fracPFG:lagNPPdev, data=test.strat.cold_deserts)
+
+# Now get and store information from the models in the lists 
+lm_herbaceous_coef[[i]]<-(df.coef.create(lm_herbaceous))
+lm_annuals_coef[[i]]<-(df.coef.create(lm_annuals))
+lm_perennials_coef[[i]]<-(df.coef.create(lm_perennials))
+
+lm_herbaceous_aic[[i]]<-(df.aic.create(lm_herbaceous))
+lm_annuals_aic[[i]]<-(df.coef.create(lm_annuals))
+lm_perennials_aic[[i]]<-(df.coef.create(lm_perennials))
+
+lm_herbaceous_rsquared[[i]]<-(df.r.squared.create(lm_herbaceous))
+lm_annuals_rsquared[[i]]<-(df.coef.create(lm_annuals))
+lm_perennials_rsquared[[i]]<-(df.coef.create(lm_perennials)) 
+}
+```
+
+```{r}
+write_rds(lm_annuals_coef,"lm_annuals_coef.rds")
+write_rds(lm_herbaceous_coef,"lm_herbaceous_coef.rds")
+write_rds(lm_perennials_coef,"lm_perennials_coef.rds")
+
+write_rds(lm_annuals_aic,"lm_annuals_aic.rds")
+write_rds(lm_herbaceous_aic,"lm_herbaceous_aic.rds")
+write_rds(lm_perennials_aic,"lm_perennials_aic.rds")
+
+write_rds(lm_annuals_rsquared,"lm_annuals_rsquared.rds")
+write_rds(lm_herbaceous_rsquared,"lm_herbaceous_rsquared.rds")
+write_rds(lm_perennials_rsquared,"lm_perennials_rsquared.rds")
+```
+
+```{r}
+setwd('~/Desktop')
+lm_annuals_coef<-readRDS("lm_annuals_coef.rds")
+lm_herbaceous_coef<-readRDS("lm_herbaceous_coef.rds")
+lm_perennials_coef<-readRDS("lm_perennials_coef.rds")
+```
+
+
+```{r}
+cold_deserts_annual_coefficients<-(list_to_df_initial(lm_annuals_coef))
+cold_deserts_herbaceous_coefficients<-(list_to_df_initial(lm_herbaceous_coef))
+cold_deserts_perennials_coefficients<-(list_to_df_initial(lm_perennials_coef))
+
+mean(cold_deserts_annual_coefficients$coefficient.fracAFG_lagNPPdev)
+mean(cold_deserts_perennials_coefficients$coefficient.fracPFG_lagNPPdev)
+mean(cold_deserts_herbaceous_coefficients$coefficient.fracHERB_lagNPPdev)
+  
+```
+
+```{r}
+jpeg("annuals.jpeg",
+     width=12,
+     height=10,
+     units="in",
+     res=300)
+ggplot()+
+  geom_density(data=cold_deserts_annual_coefficients, aes(x=coefficient.fracAFG_lagNPPdev,after_stat(scaled),fill="Annuals"),alpha=.3)+
+  geom_density(data=cold_deserts_herbaceous_coefficients, aes(x=coefficient.fracHERB_lagNPPdev,after_stat(scaled),fill="All herbaceous"),alpha=.3)+
+  geom_density(data=cold_deserts_perennials_coefficients, aes(x=coefficient.fracPFG_lagNPPdev,after_stat(scaled),fill="Perennials"),alpha=.3)+
+ xlab("Change in legacy effect per % annual NPP")+
+ ylab("Probability Density")+
+ theme_classic() + 
+  labs(fill = "Ecoregion")+
+  theme(legend.key.size = unit(.75, 'cm'), #change legend key size
+        legend.title = element_text(size=20), #change legend title font size
+        legend.text = element_text(size=18))+ 
+  scale_y_continuous(expand = c(0,0),limits = c(0,1.02))+
+scale_color_manual(name="Predictor",
+                   values= c("Annuals"="skyblue","Perennials"="red","All herbaceous"="green"))+
+  theme(axis.title.x =element_text( size=25),
+        axis.title.y = element_text(size=25),
+        axis.text.x = element_text(size=20),
+        axis.text.y = element_text(size=20))+
+  theme(legend.position = c(.88,.6))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=15),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), #make the borders clear in prep for just have two axes
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))
+dev.off()
+```
+
+```{r}
+ggplot()+
+  geom_density(data=legacydata, aes(x=fracPFG,after_stat(scaled),fill=ecoregion),alpha=.3)
+```
+

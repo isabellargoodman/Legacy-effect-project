@@ -30,47 +30,22 @@ mlrmodel<-legacydata%>%
   do(model=lm(NPPdev~PPTdev+lagNPPdev, data=.))%>%
   mutate(coef=coef(model)[3])
 
-
+#select only needed columns
 mlrmodel <- mlrmodel %>%
   select(x, y, coef)
 
 
 #Export data
 write_rds(mlrmodel, "perpixelmodel_final.rds")
-
-
-
 ```
 
 ```{r}
 setwd("~/Desktop")
 mlrmodel<-readRDS("perpixelmodel_final.rds")
+
 #Subset data to middle 95% in order to better show variability
 quantile(mlrmodel$coef,probs=c(0.025,0.975))
 mlrmodelsubset<-mlrmodel[mlrmodel$coef>-0.001712205 & mlrmodel$coef<0.796500417, ] 
-```
-```{r}
-merged<-merge(legacydata,mlrmodel,by=c("x","y"))
-
-merged<-merged%>%
-  group_by(x,y)%>%
-  mutate(NPPsd=sd(NPP))
-
-merged<-merged%>%
-  group_by(x,y)%>%
-  mutate(mean=mean(NPP))
-
-merged<-merged%>%
-  group_by(x,y)%>%
-  mutate(cv=NPPsd/mean)
-
-```
-
-```{r}
-ggplot(data=merged,aes(x=cv, y=coef))+
-  geom_point()+
-  facet_wrap(~ecoregion)
-
 ```
 
 ```{r}
@@ -150,6 +125,7 @@ dev.off()
 ```
 
 ```{r}
+#Merge with figure 2a, and create figure 2
 jpeg("map and density.jpeg",
      width=16,
      height=6,
@@ -160,4 +136,62 @@ dev.off()
 ```
 
 
+```{r}
+#merge data so that perpixel coefficients and all other data are together. 
+merged<-merge(legacydata,mlrmodel,by=c("x","y"))
+
+#calculate the coefficient of variation for NPP. 
+merged <- merged %>%
+  group_by(x, y) %>%
+  mutate(
+    NPPsd = sd(NPP),
+    mean_NPP = mean(NPP),
+    cv = NPPsd / mean_NPP
+  )
+
+#group by x,y,ecoregion
+CVdata<-merged%>%
+  group_by(x,y,ecoregion)%>%
+  summarise_at(vars(MAP,coef,cv),
+               list(mean=mean))
+  
+```
+
+```{r}
+#create supporting figure 5 
+
+jpeg("CV and MAP.jpeg",
+     width=16,
+     height=12,
+     units="in",
+     res=300)
+ggplot(data=CVdata, aes(x=MAP_mean,y=cv_mean))+
+  geom_point(size=.2,alpha=.5)+
+  scale_y_continuous(expand=c(0,0))+
+  geom_smooth(aes(group=ecoregion), method="lm", color="red", size=.5, se=FALSE)+
+  labs(x="MAP", y="Coefficient of Variation")+
+  facet_wrap(~ecoregion,scales="free")+
+  theme_classic()+
+   theme(axis.title.x =element_text( size=20),
+        axis.title.y = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        strip.text = element_text(size=14))
+dev.off()
+
+```
+
+```{r}
+ggplot(data=CVdata, aes(x=cv_mean,y=coef_mean))+
+  geom_point(size=.2,alpha=.5)+
+  scale_y_continuous(expand=c(0,0))+
+  geom_smooth(aes(group=ecoregion), method="lm", color="red", size=.5, se=FALSE)+
+  facet_wrap(~ecoregion,scales="free")+
+  theme_classic()+
+   theme(axis.title.x =element_text( size=20),
+        axis.title.y = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        strip.text = element_text(size=14))
+```
 
