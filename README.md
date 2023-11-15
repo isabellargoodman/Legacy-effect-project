@@ -13,7 +13,8 @@ analysis question 2&3.Rmd: This markdown file includes analysis and the bootstra
 functions.Rmd: This markdown file includes all functions used in the previous loops
 
 # Step-2
-create figures 
+create figures
+
 ecoregions map.Rmd: create figure 1 
 
 climate extreme analysis.Rmd: Analysis for legacy effects following climatically extreme years, and code to create figure 3.
