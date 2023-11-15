@@ -18,34 +18,68 @@ library(ggpubr)
 setwd("~/Desktop")
 legacydata<-readRDS("legacydata.rds")
 
+cali_ecoregion<-legacydata[legacydata$ecoregion=='cali',]
+cold_ecoregion<-legacydata[legacydata$ecoregion=='cold',]
+northern_ecoregion<-legacydata[legacydata$ecoregion=='northern',]
+sgs_ecoregion<-legacydata[legacydata$ecoregion=='sgs',]
+hot_ecoregion<-legacydata[legacydata$ecoregion=='hot',]
+
 #Run per pixel model on equation 4 and extract coefficients to map
 mlrmodel<-legacydata%>%
   group_by(x,y)%>%
   do(model=lm(NPPdev~PPTdev+lagNPPdev, data=.))%>%
   mutate(coef=coef(model)[3])
 
+
+mlrmodel <- mlrmodel %>%
+  select(x, y, coef)
+
+
 #Export data
-write_rds(mlrmodel, "perpixelmode1l.rds")
+write_rds(mlrmodel, "perpixelmodel_final.rds")
+
+
 
 ```
 
 ```{r}
 setwd("~/Desktop")
-mlr<-readRDS("perpixelmodel.rds")
+mlrmodel<-readRDS("perpixelmodel_final.rds")
 #Subset data to middle 95% in order to better show variability
 quantile(mlrmodel$coef,probs=c(0.025,0.975))
-mlrmodelsubset<-mlrmodel[mlrmodel$coef>-0.005924357 & mlrmodel$coef<0.775651517, ] 
+mlrmodelsubset<-mlrmodel[mlrmodel$coef>-0.001712205 & mlrmodel$coef<0.796500417, ] 
+```
+```{r}
+merged<-merge(legacydata,mlrmodel,by=c("x","y"))
+
+merged<-merged%>%
+  group_by(x,y)%>%
+  mutate(NPPsd=sd(NPP))
+
+merged<-merged%>%
+  group_by(x,y)%>%
+  mutate(mean=mean(NPP))
+
+merged<-merged%>%
+  group_by(x,y)%>%
+  mutate(cv=NPPsd/mean)
+
 ```
 
+```{r}
+ggplot(data=merged,aes(x=cv, y=coef))+
+  geom_point()+
+  facet_wrap(~ecoregion)
 
+```
 
 ```{r}
 #Transform data from df to raster
 r_obj <- raster(xmn=-122.9, xmx=-97, ymn=28, ymx=49, resolution=c(0.01347473, 0.01347473))
 
-mlrcoefsubset<- rasterize(x=mlrsubset[, 1:2], # lon-lat data
+mlrcoefsubset<- rasterize(x=mlrmodelsubset[, 1:2], # lon-lat data
                     y=r_obj, # raster object
-                    field=mlrsubset[,3 ], # vals to fill raster with
+                    field=mlrmodelsubset[,3 ], # vals to fill raster with
                     fun=mean) # aggregate function
 ```
 
@@ -111,18 +145,17 @@ map<-ggplot() +
         legend.position = "top")+
   guides(fill=guide_colourbar(barwidth=12, barheight=1, title.hjust=0, title="Legacy Effect ", draw.llim = TRUE, draw.ulim = TRUE,))
 map
-dev.off()
 
+dev.off()
 ```
 
-
 ```{r}
-jpeg("map and density2.jpeg",
-     width=14,
+jpeg("map and density.jpeg",
+     width=16,
      height=6,
      units="in",
      res=300)
-ggarrange(map,effect_byEco,labels=c('(a)','(b)'))
+ggarrange(map,legeffect_byEco,labels=c('(a)','(b)'))
 dev.off()
 ```
 

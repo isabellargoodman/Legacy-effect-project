@@ -53,23 +53,6 @@ pptcali<-lapply(dirPPTcali,function(dirPPTcali){
 
 pptdfcali<-bind_rows(pptcali) 
 
-filepathHERBcali<-file.path("~/Desktop/Legacy Project/cali annuals/herbaceous cover CALI")
-dirHERBcali<-dir(filepathHERBcali, full.names = T)
-
-herbcali<-lapply(dirHERBcali,function(dirHERBcali){ 
-  rasters<-stack(dirHERBcali)
-  rasterdata<-rasterToPoints(rasters)
-  rasterdf<-as.data.frame(rasterdata)
-  rasterdf$herb <- as.numeric(apply(rasterdf[,3:8],1,sum))
-  rasterdf<-subset(rasterdf,select=-c(AFG,BGR,LTR,PFG,SHR,TRE))
-  rasterdf$year<-(as.character(dirHERBcali))
-  rasterdf$year<-substr(rasterdf$year, 75,78)
-  rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
-  (rasterdf)
-  })
-
-herbdfcali<-bind_rows(herbcali)
-
 filepathTEMPcali<-file.path("~/Desktop/Legacy Project/cali annuals/cali temp")
 dirTEMPcali<-dir(filepathTEMPcali, full.names = T)
 
@@ -87,10 +70,9 @@ tempcali<-lapply(dirTEMPcali,function(dirTEMPcali){
 
 tempdfcali<-bind_rows(tempcali)
 
-#Left join the NPP dataframe, the PPT dataframe, and the herb dataframe by x, y and year.
+#Left join the NPP dataframe, and the PPT dataframe, by x, y and year.
 CALIdata <- pptdfcali %>% 
-  left_join(nppdfcali, by = c("x", "y", "year")) %>% 
-  left_join(herbdfcali, by = c("x", "y", "year")) %>% 
+  left_join(nppdfcali, by = c("x", "y", "year"))%>% 
   left_join(tempdfcali, by = c("x", "y", "year"))
 
 CALIdata$ecoregion<-"cali"
@@ -98,6 +80,7 @@ CALIdata$ecoregion<-"cali"
 #rename precipitation variable 
 CALIdata<-CALIdata%>%
   rename("PPT"="prcp")
+
 
 #Correct NPP units 
 CALIdata <- CALIdata %>%
@@ -113,12 +96,13 @@ CALIdata<-CALIdata%>%
 
 CALIdata <- CALIdata %>%
   group_by(ID) %>%
-  mutate(pue = mean(NPP) / mean(PPT)) %>%
-  group_by(ecoregion) %>%
+  mutate(pue = mean(NPP) / mean(PPT))
+
+CALIdata<-CALIdata%>%
+  group_by(ecoregion)%>%
   mutate(
     meanPUE = mean(pue, na.rm = TRUE),
-    PUEsd = sd(pue, na.rm = TRUE)
-  )
+    PUEsd = sd(pue, na.rm = TRUE))
 
 
 #Calculate the min and max PUE values we want (+/- 3 standard deviations from the mean)
@@ -142,7 +126,7 @@ CALIdata<-na.omit(CALIdata)
 write_rds(CALIdata, "CALIdata2.rds" )
 
 #Remove unnecessary datasets to clear up space in global environement
-rm(herbcali,herbdfcali,nppcali,nppdfcali,pptcali,pptdfcali,raster1986cali,tempcali,tempdfcali)
+rm(nppcali,nppdfcali,pptcali,pptdfcali,raster1986cali,tempcali,tempdfcali)
 ```
 
 #Repeat the previous loop for all ecoregions. 
@@ -200,25 +184,8 @@ tempcold<-lapply(dirTEMPcold,function(dirTEMPcold){
 
 tempdfcold<-bind_rows(tempcold)
 
-filepathHERBcold<-file.path("~/Desktop/Legacy Project/cold deserts/herbaceous cover COLD")
-dirHERBcold<-dir(filepathHERBcold, full.names = T)
-
-herbcold<-lapply(dirHERBcold,function(dirHERBcold){ 
-  rasters<-stack(dirHERBcold)
-  rasterdata<-rasterToPoints(rasters)
-  rasterdf<-as.data.frame(rasterdata)
-  rasterdf$herb <- as.numeric(apply(rasterdf[,3:8],1,sum))
-  rasterdf<-subset(rasterdf,select=-c(AFG,BGR,LTR,PFG,SHR,TRE))
-  rasterdf$year<-(as.character(dirHERBcold))
-  rasterdf$year<-substr(rasterdf$year, 75,78)
-  rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
-  (rasterdf)
-  })
-
-herbdfcold<-bind_rows(herbcold)
 
 COLDdata<-left_join(pptdfcold,nppdfcold, by=c("x","y","year"))
-COLDdata<-left_join(COLDdata, herbdfcold, by=c("x","y","year"))
 COLDdata<-left_join(COLDdata,tempdfcold,by=c("x","y","year"))
 
 COLDdata$ecoregion<-"cold"
@@ -261,7 +228,7 @@ COLDdata$lagTEMP<-as.numeric(lag(COLDdata$temp, 324650))
 COLDdata<-na.omit(COLDdata)
 
 write_rds(COLDdata, "COLDdata2.rds" )
-rm(herbcold,herbdfcold,nppcold,nppdfcold,pptcold,pptdfcold,raster1986cold,tempcold,tempdfcold)
+rm(nppcold,nppdfcold,pptcold,pptdfcold,raster1986cold,tempcold,tempdfcold)
 ```
 
 ```{r}
@@ -301,23 +268,6 @@ pptns<-lapply(dirPPTns,function(dirPPTns){
 
 pptdfns<-bind_rows(pptns) 
 
-filepathHERBns<-file.path("~/Desktop/Legacy Project/ns/herbaceous cover NS")
-dirHERBns<-dir(filepathHERBns, full.names = T)
-
-herbns<-lapply(dirHERBns,function(dirHERBns){ 
-  rasters<-stack(dirHERBns)
-  rasterdata<-rasterToPoints(rasters)
-  rasterdf<-as.data.frame(rasterdata)
-  rasterdf$herb <- as.numeric(apply(rasterdf[,3:8],1,sum))
-  rasterdf<-subset(rasterdf,select=-c(AFG,BGR,LTR,PFG,SHR,TRE))
-  rasterdf$year<-(as.character(dirHERBns))
-  rasterdf$year<-substr(rasterdf$year, 63,66)
-  rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
-  (rasterdf)
-  })
-
-herbdfns<-bind_rows(herbns)
-
 filepathTEMPns<-file.path("~/Desktop/Legacy Project/ns/ns temp")
 dirTEMPns<-dir(filepathTEMPns, full.names = T)
 
@@ -336,7 +286,6 @@ tempns<-lapply(dirTEMPns,function(dirTEMPns){
 tempdfns<-bind_rows(tempns)
 
 NSdata<-left_join(pptdfns,nppdfns, by=c("x","y","year"))
-NSdata<-left_join(NSdata, herbdfns, by=c("x","y","year"))
 NSdata<-left_join(NSdata,tempdfns,by=c("x", "y", "year"))
 
 NSdata<-NSdata%>%
@@ -381,7 +330,7 @@ NSdata$lagTEMP<-as.numeric(lag(NSdata$temp, 312381))
 NSdata<-na.omit(NSdata)
 
 write_rds(NSdata, "NSdata2.rds" )
-rm(herbns,herbdfns,nppns,nppdfns,pptns,pptdfns,raster1986ns,tempns,tempdfns)
+rm(nppns,nppdfns,pptns,pptdfns,raster1986ns,tempns,tempdfns)
 ```
 
 ```{r}
@@ -421,23 +370,6 @@ pptsgs<-lapply(dirPPTsgs,function(dirPPTsgs){
 
 pptdfsgs<-bind_rows(pptsgs) 
 
-filepathHERBsgs<-file.path("~/Desktop/Legacy Project/sgs/herbaceous cover sgs")
-dirHERBsgs<-dir(filepathHERBsgs, full.names = T)
-
-herbsgs<-lapply(dirHERBsgs,function(dirHERBsgs){ 
-  rasters<-stack(dirHERBsgs)
-  rasterdata<-rasterToPoints(rasters)
-  rasterdf<-as.data.frame(rasterdata)
-  rasterdf$herb <- as.numeric(apply(rasterdf[,3:8],1,sum))
-  rasterdf<-subset(rasterdf,select=-c(AFG,BGR,LTR,PFG,SHR,TRE))
-  rasterdf$year<-(as.character(dirHERBsgs))
-  rasterdf$year<-substr(rasterdf$year, 65,68)
-  rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
-  (rasterdf)
-  })
-
-herbdfsgs<-bind_rows(herbsgs)
-
 filepathTEMPsgs<-file.path("~/Desktop/Legacy Project/sgs/sgs temp")
 dirTEMPsgs<-dir(filepathTEMPsgs, full.names = T)
 
@@ -456,7 +388,6 @@ tempsgs<-lapply(dirTEMPsgs,function(dirTEMPsgs){
 tempdfsgs<-bind_rows(tempsgs)
 
 SGSdata<-left_join(pptdfsgs,nppdfsgs, by=c("x","y","year"))
-SGSdata<-left_join(SGSdata, herbdfsgs, by=c("x","y","year"))
 SGSdata<-left_join(SGSdata,tempdfsgs, by=c("x","y","year"))
 
 SGSdata<-SGSdata%>%
@@ -501,7 +432,7 @@ SGSdata<-na.omit(SGSdata)
 write_rds(SGSdata, "SGSdata2.rds" )
 
 
-rm(herbsgs,herbdfsgs,nppsgs,nppdfsgs,pptsgs,pptdfsgs,raster1986sgs, tempsgs,tempdfsgs)
+rm(nppsgs,nppdfsgs,pptsgs,pptdfsgs,raster1986sgs, tempsgs,tempdfsgs)
 ```
 
 ```{r}
@@ -546,24 +477,6 @@ pptdfhot<-bind_rows(ppthot)
 filepathHERBhot<-file.path("~/Desktop/Legacy Project/Hot deserts/hot deserts herb")
 dirHERBhot<-dir(filepathHERBhot, full.names = T)
 
-herbhot<-lapply(dirHERBhot,function(dirHERBhot){ 
-  rasters<-stack(dirHERBhot)
-  rasterdata<-rasterToPoints(rasters)
-  rasterdf<-as.data.frame(rasterdata)
-  rasterdf$herb <- as.numeric(apply(rasterdf[,3:8],1,sum))
-  rasterdf<-subset(rasterdf,select=-c(AFG,BGR,LTR,PFG,SHR,TRE))
-  rasterdf$year<-(as.character(dirHERBhot))
-  rasterdf$year<-substr(rasterdf$year, 69,72)
-  rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
-  (rasterdf)
-  })
-
-herbdfhot<-bind_rows(herbhot)
-
-
-filepathTEMPhot<-file.path("~/Desktop/Legacy Project/Hot deserts/hot temp")
-dirTEMPhot<-dir(filepathTEMPhot, full.names = T)
-
 temphot<-lapply(dirTEMPhot,function(dirTEMPhot){ 
   rasters<-stack(dirTEMPhot)
   resampled<-resample(rasters,raster1986hot)
@@ -579,7 +492,6 @@ temphot<-lapply(dirTEMPhot,function(dirTEMPhot){
 tempdfhot<-bind_rows(temphot)
 
 HOTdata<-left_join(pptdfhot,nppdfhot, by=c("x","y","year"))
-HOTdata<-left_join(HOTdata, herbdfhot, by=c("x","y","year"))
 HOTdata<-left_join(HOTdata, tempdfhot, by=c("x","y","year"))
 
 HOTdata<-HOTdata%>%
@@ -623,7 +535,7 @@ HOTdata<-na.omit(HOTdata)
 
 write_rds(HOTdata, "HOTdata2.rds" )
 
-rm(herbhot,herbdfhot,npphot,nppdfhot,ppthot,pptdfhot,raster1986hot)
+rm(npphot,nppdfhot,ppthot,pptdfhot,raster1986hot)
 ```
 
 ```{r}
@@ -651,7 +563,7 @@ legacydata<-legacydata%>%
     
 #remove unneeded columns
 legacydata<-legacydata%>%
-  select(-pue,-herb,-PUEsd,-minPUE,-maxPUE,-meanPUE,)
+  select(-pue,-PUEsd,-minPUE,-maxPUE,-meanPUE,)
 
 
 #Create a column for whether or not an observation falls above or below MAP 
