@@ -10,14 +10,17 @@ analysis question 2&3.Rmd: This markdown file includes analysis and the bootstra
 
 analysis S1.Rmd: This markdown file includes analysis and the bootstrapping loop for supporting information analysis S1 and for creating and exporting supporting figure 1.
 
+cold desert analysis: This markdown file includes analysis for for supporting information analysis S2. 
+
 functions.Rmd: This markdown file includes all functions used in the previous loops 
 
 
 # Step-2
 create figures  
 
-ecoregions map.Rmd: create figure 1 
+ecoregions map.Rmd: This markdown file includes code to create figure 1b. 
 
-climate extreme analysis.Rmd: Analysis for legacy effects following climatically extreme years, and code to create figure 3.
+climate extreme analysis.Rmd: This markdown file includes code for analysis of legacy effects following climatically extreme years, and code to create figure 3.
 
+figures for legacy paper.Rmd: This markdown file inlcudes code for creating figure 2, and supporting figure 5. 
 
