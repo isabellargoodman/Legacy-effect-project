@@ -1,0 +1,667 @@
+---
+title: "productivty density"
+output: html_document
+date: "2023-05-09"
+---
+---
+title: "drought"
+output: html_document
+date: "2023-04-04"
+---
+
+```{r}
+#Load libraries 
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(data.table)
+library(ggpubr)
+
+#Load data
+setwd("~/Desktop/Legacy Project")
+legacydata<-readRDS("legacydata.rds")
+
+#calculate mean NPP for each pixel 
+NPPpixelmeans<-legacydata%>%
+  group_by(x,y,ecoregion)%>%
+  summarise_at(vars(NPP),
+               list(NPPpixelmean = mean))
+
+#Merge NPP means with data             
+legacydata<-left_join(x=legacydata, y=NPPpixelmeans, by=c("x", "y", "ecoregion")) 
+```
+
+```{r}
+#Separate by ecoregion
+cali_ecoregion<-legacydata[legacydata$ecoregion=='cali',]
+
+#Create "lead" variable for NPP, PPT, so current year can be compared to following year 
+cali_ecoregion$leadNPP<-as.numeric(lead(cali_ecoregion$NPP, 29025))
+cali_ecoregion$leadPPT<-as.numeric(lead(cali_ecoregion$PPT, 29025))
+
+#Remove values with NA 
+cali_ecoregion<-cali_ecoregion%>%
+  drop_na()
+
+#Calculate deviation from the mean for these lead variables
+mean(cali_ecoregion$leadNPP)
+cali_ecoregion$leadNPPdev<-cali_ecoregion$leadNPP-325.8247
+
+mean(cali_ecoregion$NPP)
+cali_ecoregion$NPPdev<-cali_ecoregion$NPP-324.0365
+
+#Repeat for all ecoregions 
+cold_ecoregion<-legacydata[legacydata$ecoregion=='cold',]
+cold_ecoregion$leadNPP<-as.numeric(lead(cold_ecoregion$NPP, 297282))
+cold_ecoregion$leadPPT<-as.numeric(lead(cold_ecoregion$PPT, 297282))
+cold_ecoregion<-cold_ecoregion%>%
+  drop_na()
+mean(cold_ecoregion$leadNPP)
+cold_ecoregion$leadNPPdev<-cold_ecoregion$leadNPP-104.3794
+mean(cold_ecoregion$NPP)
+cold_ecoregion$NPPdev<-cold_ecoregion$NPP-104.228
+
+northern_ecoregion<-legacydata[legacydata$ecoregion=='northern',]
+northern_ecoregion$leadNPP<-as.numeric(lead(northern_ecoregion$NPP, 276188))
+northern_ecoregion$leadPPT<-as.numeric(lead(northern_ecoregion$PPT, 276188))
+northern_ecoregion<-northern_ecoregion%>%
+  drop_na()
+mean(northern_ecoregion$leadNPP)
+northern_ecoregion$leadNPPdev<-northern_ecoregion$leadNPP-190.7918
+mean(northern_ecoregion$NPP)
+northern_ecoregion$NPPdev<-northern_ecoregion$NPP-198.2122
+
+sgs_ecoregion<-legacydata[legacydata$ecoregion=="sgs",]
+sgs_ecoregion$leadNPP<-as.numeric(lead(sgs_ecoregion$NPP, 107817))
+sgs_ecoregion$leadPPT<-as.numeric(lead(sgs_ecoregion$PPT, 107817))
+sgs_ecoregion<-sgs_ecoregion%>%
+  drop_na()
+mean(sgs_ecoregion$leadNPP)
+sgs_ecoregion$leadNPPdev<-sgs_ecoregion$leadNPP-175.6815
+mean(sgs_ecoregion$NPP)
+sgs_ecoregion$NPPdev<-sgs_ecoregion$NPP-174.4415
+
+hot_ecoregion<-legacydata[legacydata$ecoregion=='hot',]
+hot_ecoregion$leadNPP<-as.numeric(lead(hot_ecoregion$NPP, 134359))
+hot_ecoregion$leadPPT<-as.numeric(lead(hot_ecoregion$PPT, 134359))
+hot_ecoregion<-hot_ecoregion%>%
+  drop_na()
+mean(hot_ecoregion$leadNPP)
+hot_ecoregion$leadNPPdev<-hot_ecoregion$leadNPP-82.8344
+mean(hot_ecoregion$NPP)
+hot_ecoregion$NPPdev<-hot_ecoregion$NPP-82.4554
+
+#Merge data 
+prod_data<-rbind(hot_ecoregion,cali_ecoregion,cold_ecoregion,northern_ecoregion,sgs_ecoregion)
+
+#Export data as .rds file
+write_rds(prod_data, "prod_data.rds")
+
+setwd("~/Desktop/Legacy Project")
+prod_data<-readRDS("prod_data.rds")
+```
+
+```{r}
+#Calculate deviation from the pixel mean for each observation
+lowprod_data<-prod_data
+lowprod_data$NPPpixdev<-lowprod_data$NPP-lowprod_data$NPPpixelmean
+
+#Calculate NPP standard deviation for each pixel, merge datasets
+NPPsd<-lowprod_data%>%
+  group_by(x,y,ecoregion)%>%
+  summarise_at(vars(NPP),
+               list(sd=sd))
+
+lowprod_data<-left_join(x=lowprod_data, y=NPPsd, by=c("x", "y","ecoregion")) 
+
+#Calculate minimum and maximum NPP values (mean+/- 1 sd) for later use
+lowprod_data$nppmin<-(145.0742-lowprod_data$sd) 
+lowprod_data$nppmax<-(145.0742+lowprod_data$sd)
+
+#Select only observations that have the lowest deviation from the pixel mean
+lowprod_data_mins<-lowprod_data%>%
+  group_by(x,y,ecoregion)%>%
+ slice(which.min(NPPpixdev))
+
+#Remove observations that have the following year production (leadNPP) greater or less than 1 sd from the mean, to avoid multi year extraordinarily unproductive years
+lowprod_data_mins<-lowprod_data_mins[lowprod_data_mins$leadNPP>lowprod_data_mins$nppmin & lowprod_data_mins$leadNPP<lowprod_data_mins$nppmax, ]
+
+#Calculate NPP deviation
+lowprod_data_mins$NPPdeviation<-lowprod_data_mins$NPP-lowprod_data_mins$NPPpixelmean
+lowprod_data_mins$leadNPPdeviation<-lowprod_data_mins$leadNPP-lowprod_data_mins$NPPpixelmean
+
+#Calculate NPP % change from the mean
+lowprod_data_mins$NPP_percent_change<-((lowprod_data_mins$NPP-lowprod_data_mins$NPPpixelmean)/(lowprod_data_mins$NPPpixelmean))*100
+lowprod_data_mins$leadNPP_percent_change<-((lowprod_data_mins$leadNPP-lowprod_data_mins$NPPpixelmean)/(lowprod_data_mins$NPPpixelmean))*100
+
+#Export as .rds file
+write_rds(lowprod_data_mins,"lowprod_data_mins.rds")
+setwd("~/Desktop")
+lowprod_data_mins<-readRDS("lowprod_data_mins.rds")
+```
+
+**Repeat the process to find extrodinarily high productivity years, and extrodinarily wet and dry years.** 
+```{r}
+#Import productivity data and duplicate it renaming it to highprod_data, repeat process this time taking the observations with the highest deviation from the mean
+highprod_data<-prod_data
+
+highprod_data$NPPpixdev<-highprod_data$NPP-highprod_data$NPPpixelmean
+NPPsd<-highprod_data%>%
+  group_by(x,y,ecoregion)%>%
+  summarise_at(vars(NPP),
+               list(sd=sd))
+
+highprod_data<-left_join(x=highprod_data, y=NPPsd, by=c("x", "y","ecoregion")) 
+mean(highprod_data$NPP)
+
+highprod_data$nppmin<-(145.0742-highprod_data$sd) 
+highprod_data$nppmax<-(145.0742+highprod_data$sd)
+
+highprod_data_max<-highprod_data%>%
+  group_by(x,y,ecoregion)%>%
+ slice(which.max(NPPpixdev))
+
+highprod_data_max<-highprod_data_max[highprod_data_max$leadNPP>highprod_data_max$nppmin & highprod_data_max$leadNPP<highprod_data_max$nppmax, ]
+  
+highprod_data_max$NPPdeviation<-highprod_data_max$NPP-highprod_data_max$NPPpixelmean
+highprod_data_max$leadNPPdeviation<-highprod_data_max$leadNPP-highprod_data_max$NPPpixelmean
+
+highprod_data_max$NPP_percent_change<-((highprod_data_max$NPP-highprod_data_max$NPPpixelmean)/(highprod_data_max$NPPpixelmean))*100
+highprod_data_max$leadNPP_percent_change<-((highprod_data_max$leadNPP-highprod_data_max$NPPpixelmean)/(highprod_data_max$NPPpixelmean))*100
+
+write_rds(highprod_data_max, "highprod_data_max.rds")
+
+setwd("~/Desktop")
+highprod_data_max<-readRDS("highprod_data_max.rds")
+```
+
+```{r}
+#Label data with productivity conditions and merge datasets
+lowprod_data_mins$condition<-'Low Productivity'
+highprod_data_max$condition<-'High Productivity'
+productivityconditions<-rbind(lowprod_data_mins,highprod_data_max)
+```
+
+```{r}
+#Create productivity figure
+productivityhist<-ggplot(productivityconditions, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("darkolivegreen4", "wheat2"),labels = c("High Productivity", "Low Productivity"))+
+  scale_x_continuous(limits = c(-250, 250))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.023))+
+  xlab(bquote('Current-Year NPP Deviation in gC/'~m^2))+
+  ylab("Probability Density")+
+  theme(axis.title.x =element_text( size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=14), 
+        legend.text = element_text(size=12))
+productivityhist
+```
+
+```{r}
+#Import productivity data and duplicate it renaming it to droughtdata, repeat process this time taking the observations with the lowest PPT deviation from the mean
+droughtdata<-prod_data
+#Create MAP variable 
+MAP<-droughtdata%>%
+  group_by(x,y,ecoregion)%>%
+  summarise_at(vars(PPT),
+               list(MAP = mean))
+droughtdata<-left_join(x=droughtdata, y=MAP, by=c("x", "y", "ecoregion"))
+
+droughtdata$PPTpixdev<-droughtdata$PPT-droughtdata$MAP
+PPTsd<-droughtdata%>%
+  group_by(x,y,ecoregion)%>%
+  summarise_at(vars(PPT),
+               list(sd=sd))
+
+droughtdata<-left_join(x=droughtdata, y=PPTsd, by=c("x", "y","ecoregion")) 
+droughtdata$nppmin<-(387.7513-droughtdata$sd) 
+droughtdata$nppmax<-(387.7513+droughtdata$sd)
+
+droughtdata_mins<-droughtdata%>%
+  group_by(x,y)%>%
+ slice(which.min(PPTpixdev))
+
+droughtdata_mins<-droughtdata_mins[droughtdata_mins$leadPPT>droughtdata_mins$nppmin & droughtdata_mins$leadPPT<droughtdata_mins$nppmax, ]
+  
+droughtdata_mins$NPPdeviation<-droughtdata_mins$NPP-droughtdata_mins$NPPpixelmean
+droughtdata_mins$leadNPPdeviation<-droughtdata_mins$leadNPP-droughtdata_mins$NPPpixelmean
+
+droughtdata_mins$NPP_percent_change<-((droughtdata_mins$NPP-droughtdata_mins$NPPpixelmean)/(droughtdata_mins$NPPpixelmean))*100
+droughtdata_mins$leadNPP_percent_change<-((droughtdata_mins$leadNPP-droughtdata_mins$NPPpixelmean)/(droughtdata_mins$NPPpixelmean))*100
+mean(droughtdata_mins$leadNPPdeviation)
+
+write_rds(droughtdata_mins, "droughtdata_mins.rds")
+```
+
+```{r}
+#Import productivity data and duplicate it renaming it to wetdataa, repeat process this time taking the observations with the highest PPT deviation from the mean
+wetdata<-prod_data
+MAP<-wetdata%>%
+  group_by(x,y,ecoregion)%>%
+  summarise_at(vars(PPT),
+               list(MAP = mean))
+wetdata<-left_join(x=wetdata, y=MAP, by=c("x", "y", "ecoregion"))
+
+wetdata$PPTpixdev<-wetdata$PPT-wetdata$MAP
+PPTsd<-wetdata%>%
+  group_by(x,y, ecoregion)%>%
+  summarise_at(vars(PPT),
+               list(sd=sd))
+mean(wetdata$PPT)
+
+wetdata<-left_join(x=wetdata, y=PPTsd, by=c("x", "y", "ecoregion")) 
+wetdata$nppmin<-(387.7477-wetdata$sd) 
+wetdata$nppmax<-(387.7477+wetdata$sd)
+
+wetdata_max<-wetdata%>%
+  group_by(x,y)%>%
+ slice(which.max(PPTpixdev))
+
+wetdata_max<-wetdata_max[wetdata_max$leadPPT>wetdata_max$nppmin & wetdata_max$leadPPT<wetdata_max$nppmax, ]
+  
+wetdata_max$NPPdeviation<-wetdata_max$NPP-wetdata_max$NPPpixelmean
+wetdata_max$leadNPPdeviation<-wetdata_max$leadNPP-wetdata_max$NPPpixelmean
+
+wetdata_max$NPP_percent_change<-((wetdata_max$NPP-wetdata_max$NPPpixelmean)/(wetdata_max$NPPpixelmean))*100
+wetdata_max$leadNPP_percent_change<-((wetdata_max$leadNPP-wetdata_max$NPPpixelmean)/(wetdata_max$NPPpixelmean))*100
+
+write_rds(wetdata_max, "wetdata_max.rds")
+
+mean(droughtdata_mins$leadNPPdeviation)
+```
+
+```{r}
+#Create drought figure
+droughthist<-ggplot(droughtconditions, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("wheat2", "darkolivegreen4"))+
+  scale_x_continuous(limits = c(-250, 250))+
+  xlab("NPP deviation")+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.018))+
+  theme(axis.title.x =element_text( size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=15),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=14), 
+        legend.text = element_text(size=12))
+droughthist
+```
+
+```{r}
+#Merge figures and export
+jpeg("figure 5.jpeg",
+     width=14,
+     height=10,
+     units="in",
+     res=300)
+figure5<-ggarrange(droughthist+rremove("xlab")+rremove("ylab"), productivityhist+rremove("xlab")+rremove("ylab"),
+          nrow=1, ncol=2)
+figure5<-annotate_figure(figure5, left=text_grob("Density", rot=90, vjust=1, size=18), bottom=text_grob("Current-Year NPP Deviation",size=18))
+figure5
+dev.off()
+```
+
+
+**Create supporting figure 4** 
+```{r}
+#Separate productivity data by ecoregion 
+cali_ecoregion<-productivityconditions[productivityconditions$ecoregion=='cali',]
+cold_ecoregion<-productivityconditions[productivityconditions$ecoregion=='cold',]
+northern_ecoregion<-productivityconditions[productivityconditions$ecoregion=='northern',]
+sgs_ecoregion<-productivityconditions[productivityconditions$ecoregion=='sgs',]
+hot_ecoregion<-productivityconditions[productivityconditions$ecoregion=='hot',]
+```
+
+```{r}
+#Graph data for each ecoregion individually
+caliprod<-ggplot(cali_ecoregion, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("darkolivegreen4", "wheat2"),labels = c("High Productivity", "Low Productivity"))+
+  scale_x_continuous(limits = c(-150, 150))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  ggtitle("California Annuals")+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.015))+
+  theme(title = element_text(size=16))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(),
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'),
+        legend.title = element_text(size=12),
+        legend.text = element_text(size=10))
+caliprod
+
+coldprod<-ggplot(cold_ecoregion, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("darkolivegreen4", "wheat2"),labels = c("High Productivity", "Low Productivity"))+
+  scale_x_continuous(limits = c(-150, 150))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  ggtitle("Cold Deserts")+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.038))+
+  theme(title = element_text(size=16))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=12),
+        legend.text = element_text(size=10))
+coldprod
+
+nsprod<-ggplot(northern_ecoregion, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("darkolivegreen4", "wheat2"),labels = c("High Productivity", "Low Productivity"))+
+  scale_x_continuous(limits = c(-150, 150))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  ggtitle("Northern Mixed Prairies")+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.023))+
+  theme(title = element_text(size=16))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(),
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=12),
+        legend.text = element_text(size=10))
+nsprod
+
+sgsprod<-ggplot(sgs_ecoregion, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("darkolivegreen4", "wheat2"),labels = c("High Productivity", "Low Productivity"))+
+  scale_x_continuous(limits = c(-150, 150))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  ggtitle("Shortgrass Steppe")+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.023))+
+  theme(title = element_text(size=16))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=12), 
+        legend.text = element_text(size=10))
+sgsprod
+
+hotprod<-ggplot(hot_ecoregion, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("darkolivegreen4", "wheat2"),labels = c("High Productivity", "Low Productivity"))+
+  scale_x_continuous(limits = c(-150, 150))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  ggtitle("Hot Desert")+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.023))+
+  theme(title = element_text(size=16))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(),
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=12), 
+        legend.text = element_text(size=10))
+hotprod
+
+```
+
+
+```{r}
+#Separate drought data by ecoregion
+cali_drought<-droughtconditions[droughtconditions$ecoregion=='cali',]
+cold_drought<-droughtconditions[droughtconditions$ecoregion=='cold',]
+northern_drought<-droughtconditions[droughtconditions$ecoregion=='northern',]
+sgs_drought<-droughtconditions[droughtconditions$ecoregion=='sgs',]
+hot_drought<-droughtconditions[droughtconditions$ecoregion=='hot',]
+
+```
+
+```{r}
+#Graph drought data for each ecoregion specifically
+calidrought<-ggplot(cali_drought, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("wheat2", "darkolivegreen4"))+
+  scale_x_continuous(limits = c(-150, 150))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  ggtitle("California Annuals")+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.023))+
+  theme(title = element_text(size=16))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'),
+        legend.title = element_text(size=12),
+        legend.text = element_text(size=10))
+calidrought
+
+colddrought<-ggplot(cold_drought, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("wheat2", "darkolivegreen4"))+
+  scale_x_continuous(limits = c(-150, 150))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  ggtitle("Hot Desert")+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.023))+
+  theme(title = element_text(size=16))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(),
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=12),
+        legend.text = element_text(size=10))
+colddrought
+
+nsdrought<-ggplot(northern_drought, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("wheat2", "darkolivegreen4"))+
+  scale_x_continuous(limits = c(-150, 150))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  ggtitle("Northern Mixed Prairies")+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.023))+
+  theme(title = element_text(size=16))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'),
+        legend.title = element_text(size=12), 
+        legend.text = element_text(size=10))
+nsdrought
+
+sgsdrought<-ggplot(sgs_drought, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("wheat2", "darkolivegreen4"))+
+  scale_x_continuous(limits = c(-150, 150))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  ggtitle("Shortgrass Steppe")+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.023))+
+  theme(title = element_text(size=16))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=12), 
+        legend.text = element_text(size=10))
+sgsdrought
+
+hotdrought<-ggplot(hot_drought, aes(leadNPPdeviation, fill=condition))+
+  geom_density(bins=40,color= "#000000", alpha=.65)+
+  scale_fill_manual(values = c("wheat2", "darkolivegreen4"))+
+  scale_x_continuous(limits = c(-150, 150))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  ggtitle("Hot Desert")+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,.023))+
+  theme(title = element_text(size=16))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'),
+        legend.title = element_text(size=12),
+        legend.text = element_text(size=10))
+hotdrought
+
+```
+
+
+```{r}
+#Combine figures and export
+jpeg("supporting fig 4.jpeg",
+     width=16,
+     height=16,
+     units="in",
+     res=300)
+supporting_fig4<-ggarrange(caliprod+rremove("ylab") + rremove("xlab"),  calidrought+rremove("ylab") + rremove("xlab"),  coldprod+rremove("ylab") + rremove("xlab"),colddrought+rremove("ylab") + rremove("xlab"), nsprod+rremove("ylab") + rremove("xlab"),nsdrought+rremove("ylab") + rremove("xlab"), sgsprod+rremove("ylab") + rremove("xlab"), sgsdrought+rremove("ylab") + rremove("xlab"), hotprod+rremove("ylab") + rremove("xlab") ,hotdrought+rremove("ylab") + rremove("xlab"),
+          nrow=5, ncol=2)
+
+supporting_fig4<-annotate_figure(supporting_fig4, left=text_grob("Density", rot=90, vjust=1, face="bold", size=20),bottom=text_grob("Current-Year NPP Deviation", face="bold", size=20))
+
+supporting_fig4
+dev.off()
+```
+
+**Create Supporting fig. 5**
+```{r}
+#Create figure showing bivariate relationship between PPT deviation and following year in extremely wet/dry years. 
+bivariatedrought<-ggplot(data=droughtconditions, aes(x=PPTdev, y=leadNPPdev))+
+  geom_point(alpha=.5, pch=19, size=.4)+
+  geom_smooth(method="lm")+
+   ylab("NPP deviation in following year")+
+  xlab("PPT deviation in most extreme years")+
+  scale_y_continuous(expand = c(0,0),limits = c(-500,1000))+
+    theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=15),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(),
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"),
+    axis.ticks = element_blank())+
+  theme(axis.title.x =element_text(size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.y=element_text(size=18),
+        axis.text.x=element_text(size=18))
+bivariatedrought
+```
+
+```{r}
+#Create figure showing bivariate relationship between NPP deviation and following year NPP deviation in extremely productive/unproductive years. 
+bivariateprod<-ggplot(data=prodconditions, aes(x=NPPdev, y=leadNPPdev))+
+  geom_point(alpha=.5, pch=19, size=.4)+
+  ylab("NPP deviation in following year")+
+  xlab("NPP deviation in most extreme years")+
+  geom_smooth(method="lm")+
+  scale_y_continuous(expand = c(0,0),limits = c(-500,1000))+
+    theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=15),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"),
+    axis.ticks = element_blank())+
+  theme(axis.title.x =element_text(size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.y=element_text(size=18),
+        axis.text.x=element_text(size=18))
+bivariateprod
+```
+
+```{r}
+#Merge bivariate figures and export
+jpeg("supporting fig 5.jpeg",
+     width=16,
+     height=10,
+     units="in",
+     res=300)
+supporting_fig5<-ggarrange(bivariatedrought,bivariateprod,
+          nrow=1, ncol=2, labels=c('(a)','(b)'))
+
+supporting_fig5
+dev.off()
+```
+
+
