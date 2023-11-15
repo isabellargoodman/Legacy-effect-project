@@ -1,5 +1,5 @@
 # Legacy-effect-project
-Code for legacy effects project
+Code for 'Ubiqutous legacy effects on net primry production across western US drylands'
 
 # Step-1 
 run main analysis 
