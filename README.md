@@ -26,7 +26,7 @@ figures for legacy paper.Rmd: This markdown file inlcudes code for creating figu
 
 # additional information
 
-Google earth engine code can be found at the following: 
+Code for extracting data from Google Earth Engine can be found at the following:
 
 NPP data: https://code.earthengine.google.com/b354ec1deadaf3a12bc9f2a7492a1c40 
 
