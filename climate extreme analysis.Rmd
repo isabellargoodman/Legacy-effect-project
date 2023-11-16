@@ -18,7 +18,7 @@ library(data.table)
 library(ggpubr)
 
 #Load data
-setwd("~/Desktop/Legacy Project")
+setwd("~/Desktop")
 legacydata<-readRDS("legacydata.rds")
 ```
 
@@ -28,8 +28,8 @@ legacydata<-readRDS("legacydata.rds")
 cali_ecoregion<-legacydata[legacydata$ecoregion=='cali',]
 
 #Create "lead" variable for NPP, PPT, so current year can be compared to following year 
-cali_ecoregion$leadNPP<-as.numeric(lead(cali_ecoregion$NPP, 35799))
-cali_ecoregion$leadPPT<-as.numeric(lead(cali_ecoregion$PPT, 35799))
+cali_ecoregion$leadNPP<-as.numeric(lead(cali_ecoregion$NPP, 35755))
+cali_ecoregion$leadPPT<-as.numeric(lead(cali_ecoregion$PPT, 35755))
 #Remove values with NA 
 cali_ecoregion<-cali_ecoregion%>%
   drop_na()
@@ -37,26 +37,26 @@ cali_ecoregion<-cali_ecoregion%>%
 
 #Repeat for all ecoregions 
 cold_ecoregion<-legacydata[legacydata$ecoregion=='cold',]
-cold_ecoregion$leadNPP<-as.numeric(lead(cold_ecoregion$NPP, 324070))
-cold_ecoregion$leadPPT<-as.numeric(lead(cold_ecoregion$PPT, 324070))
+cold_ecoregion$leadNPP<-as.numeric(lead(cold_ecoregion$NPP, 324062))
+cold_ecoregion$leadPPT<-as.numeric(lead(cold_ecoregion$PPT, 324062))
 cold_ecoregion<-cold_ecoregion%>%
   drop_na()
 
 northern_ecoregion<-legacydata[legacydata$ecoregion=='northern',]
-northern_ecoregion$leadNPP<-as.numeric(lead(northern_ecoregion$NPP, 312166))
-northern_ecoregion$leadPPT<-as.numeric(lead(northern_ecoregion$PPT, 312166))
+northern_ecoregion$leadNPP<-as.numeric(lead(northern_ecoregion$NPP, 312160))
+northern_ecoregion$leadPPT<-as.numeric(lead(northern_ecoregion$PPT, 312160))
 northern_ecoregion<-northern_ecoregion%>%
   drop_na()
 
 sgs_ecoregion<-legacydata[legacydata$ecoregion=="sgs",]
-sgs_ecoregion$leadNPP<-as.numeric(lead(sgs_ecoregion$NPP, 122178))
-sgs_ecoregion$leadPPT<-as.numeric(lead(sgs_ecoregion$PPT, 122178))
+sgs_ecoregion$leadNPP<-as.numeric(lead(sgs_ecoregion$NPP, 122179))
+sgs_ecoregion$leadPPT<-as.numeric(lead(sgs_ecoregion$PPT, 122179))
 sgs_ecoregion<-sgs_ecoregion%>%
   drop_na()
 
 hot_ecoregion<-legacydata[legacydata$ecoregion=='hot',]
-hot_ecoregion$leadNPP<-as.numeric(lead(hot_ecoregion$NPP, 143425))
-hot_ecoregion$leadPPT<-as.numeric(lead(hot_ecoregion$PPT, 143425))
+hot_ecoregion$leadNPP<-as.numeric(lead(hot_ecoregion$NPP, 143420))
+hot_ecoregion$leadPPT<-as.numeric(lead(hot_ecoregion$PPT, 143420))
 hot_ecoregion<-hot_ecoregion%>%
   drop_na()
 #Merge data 
