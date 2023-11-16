@@ -24,3 +24,12 @@ climate extreme analysis.Rmd: This markdown file includes code for analysis of l
 
 figures for legacy paper.Rmd: This markdown file inlcudes code for creating figure 2, and supporting figure 5. 
 
+# additional information
+
+Google earth engine code can be found at the following: 
+
+NPP data: https://code.earthengine.google.com/b354ec1deadaf3a12bc9f2a7492a1c40 
+
+PPT data: https://code.earthengine.google.com/4200960d7ee2d7bdb7b26c0efc0f4a7b
+
+TEMP data: https://code.earthengine.google.com/fc778e137daabbbe04c232c69217a6d8
