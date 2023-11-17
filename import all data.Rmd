@@ -203,7 +203,7 @@ tempdfns<-bind_rows(tempns)
 NSdata<-left_join(pptdfns,nppdfns, by=c("x","y","year"))
 NSdata<-left_join(NSdata,tempdfns,by=c("x", "y", "year"))
 
-NSdata$ecoregion<-"ns"
+NSdata$ecoregion<-"northern"
 ```
 
 
@@ -371,16 +371,5 @@ npp_ppt_data<-subset(npp_ppt_data, select=-c("pue","PUEsd","minPUE","maxPUE","me
 saveRDS(npp_ppt_data,file="npp_ppt_data.rds",compress=TRUE)
 
 
-```
-
-
-```{r}
-CALIdata<-npp_ppt_data[npp_ppt_data$ecoregion=='cali',]
-COLDdata<-npp_ppt_data[npp_ppt_data$ecoregion=='cold',]
-NSdata<-npp_ppt_data[npp_ppt_data$ecoregion=='ns',]
-SGSdata<-npp_ppt_data[npp_ppt_data$ecoregion=='sgs',]
-HOTdata<-npp_ppt_data[npp_ppt_data$ecoregion=='hot',]
-
-write_csv(COLDdata, "colddata.csv")
 ```
 

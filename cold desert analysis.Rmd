@@ -17,18 +17,6 @@ library(ggplot2)
 setwd("~/Desktop/Legacy Project")
 legacydata<-readRDS("legacydata.rds")
 
-MAP<-legacydata%>%
-  group_by(x,y,ecoregion)%>%
-  summarise_at(vars(PPT),
-               list(MAP = mean))
-legacydata<-left_join(x=legacydata, y=MAP, by=c("x", "y", "ecoregion")) 
-
-#Create a column for whether or not an observation falls above or below MAP 
-legacydata<-legacydata%>%
-   mutate(above_below = case_when(
-     (PPT>MAP)~"above",
-     (PPT<MAP)~"below"))
-
 legacydata$herb<-legacydata$afgNPP+legacydata$pfgNPP
 legacydata$fracHERB<-legacydata$herb/legacydata$NPP
 legacydata$fracAFG<-legacydata$afgNPP/legacydata$NPP
@@ -37,11 +25,7 @@ legacydata$fracPFG<-legacydata$pfgNPP/legacydata$NPP
 
 ```{r}
 #Subset data by ecoregion
-cali_ecoregion<-legacydata[legacydata$ecoregion=='cali',]
 cold_ecoregion<-legacydata[legacydata$ecoregion=='cold',]
-northern_ecoregion<-legacydata[legacydata$ecoregion=='northern',]
-sgs_ecoregion<-legacydata[legacydata$ecoregion=='sgs',]
-hot_ecoregion<-legacydata[legacydata$ecoregion=='hot',]
 ```
 
 ```{r}
@@ -59,7 +43,7 @@ lm_perennials_rsquared<-list()
 ```
 
 ```{r}
-for(i in 1:500)
+for(i in 1:1000)
 {
 test.strat.cold_deserts<-stratified(cold_ecoregion,"above_below", 0.0001)
 
@@ -118,7 +102,7 @@ mean(cold_deserts_herbaceous_coefficients$coefficient.fracHERB_lagNPPdev)
 ```
 
 ```{r}
-jpeg("annuals.jpeg",
+jpeg("cold desert analysis.jpeg",
      width=12,
      height=10,
      units="in",

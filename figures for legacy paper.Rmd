@@ -140,6 +140,7 @@ dev.off()
 #merge data so that perpixel coefficients and all other data are together. 
 merged<-merge(legacydata,mlrmodel,by=c("x","y"))
 
+
 #calculate the coefficient of variation for NPP. 
 merged <- merged %>%
   group_by(x, y) %>%
@@ -180,7 +181,26 @@ ggplot(data=CVdata, aes(x=MAP_mean,y=cv_mean))+
 dev.off()
 
 ```
+
 ```{r}
 
+jpeg("CV and legacy effect.jpeg",
+     width=16,
+     height=12,
+     units="in",
+     res=300)
+ggplot(data=CVdata, aes(x=cv_mean,y=coef_mean))+
+  geom_point(size=.2,alpha=.5)+
+  scale_y_continuous(expand=c(0,0))+
+  geom_smooth(aes(group=ecoregion), method="lm", color="red", size=.5, se=FALSE)+
+  labs(x="Coefficient of Variation", y="Strength of legacy effect")+
+  facet_wrap(~ecoregion,scales="free")+
+  theme_classic()+
+   theme(axis.title.x =element_text( size=20),
+        axis.title.y = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        strip.text = element_text(size=14))
+dev.off()
 ```
 
