@@ -28,7 +28,7 @@ ecoregions map.Rmd: This markdown file includes code to create figure 1b.
 
 climate extreme analysis.Rmd: This markdown file includes code for analysis of legacy effects following climatically extreme years, and code to create figure 3.
 
-figures for legacy paper.Rmd: This markdown file inlcudes code for creating figure 2, and supporting figure 5. 
+figures for legacy paper.Rmd: This markdown file inlcudes code for creating figure 2, and supporting figure 5,6,and 7. 
 
 # additional information
 
