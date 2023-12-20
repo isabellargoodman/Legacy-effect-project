@@ -18,7 +18,7 @@ library(data.table)
 library(ggpubr)
 
 #Load data
-setwd("~/Desktop")
+setwd("~/OneDrive - Montana State University/Work stuff")
 legacydata<-readRDS("legacydata.rds")
 ```
 
@@ -30,44 +30,34 @@ cali_ecoregion<-legacydata[legacydata$ecoregion=='cali',]
 #Create "lead" variable for NPP, PPT, so current year can be compared to following year 
 cali_ecoregion$leadNPP<-as.numeric(lead(cali_ecoregion$NPP, 35755))
 cali_ecoregion$leadPPT<-as.numeric(lead(cali_ecoregion$PPT, 35755))
-#Remove values with NA 
-cali_ecoregion<-cali_ecoregion%>%
-  drop_na()
-
 
 #Repeat for all ecoregions 
 cold_ecoregion<-legacydata[legacydata$ecoregion=='cold',]
 cold_ecoregion$leadNPP<-as.numeric(lead(cold_ecoregion$NPP, 324062))
 cold_ecoregion$leadPPT<-as.numeric(lead(cold_ecoregion$PPT, 324062))
-cold_ecoregion<-cold_ecoregion%>%
-  drop_na()
 
 northern_ecoregion<-legacydata[legacydata$ecoregion=='northern',]
 northern_ecoregion$leadNPP<-as.numeric(lead(northern_ecoregion$NPP, 312160))
 northern_ecoregion$leadPPT<-as.numeric(lead(northern_ecoregion$PPT, 312160))
-northern_ecoregion<-northern_ecoregion%>%
-  drop_na()
 
 sgs_ecoregion<-legacydata[legacydata$ecoregion=="sgs",]
 sgs_ecoregion$leadNPP<-as.numeric(lead(sgs_ecoregion$NPP, 122179))
 sgs_ecoregion$leadPPT<-as.numeric(lead(sgs_ecoregion$PPT, 122179))
-sgs_ecoregion<-sgs_ecoregion%>%
-  drop_na()
 
 hot_ecoregion<-legacydata[legacydata$ecoregion=='hot',]
 hot_ecoregion$leadNPP<-as.numeric(lead(hot_ecoregion$NPP, 143420))
 hot_ecoregion$leadPPT<-as.numeric(lead(hot_ecoregion$PPT, 143420))
-hot_ecoregion<-hot_ecoregion%>%
-  drop_na()
+
 #Merge data 
 prod_data<-rbind(hot_ecoregion,cali_ecoregion,cold_ecoregion,northern_ecoregion,sgs_ecoregion)
-
 prod_data<-subset(prod_data,select=-c(afgNPP,pfgNPP,shrNPP,treNPP,lagTEMPdev))
+prod_data%>%
+  drop_na()
 
 #Export data as .rds file
 write_rds(prod_data, "prod_data.rds")
 
-setwd("~/Desktop/Legacy Project")
+setwd("~/Desktop")
 prod_data<-readRDS("prod_data.rds")
 ```
 
@@ -96,10 +86,6 @@ lowprod_data_mins <- lowprod_data_mins %>%
 
 lowprod_data_mins <- lowprod_data_mins %>%
   mutate(leadNPPdev = leadNPP - NPPpixmean)
-
-#Export as .rds file
-write_rds(lowprod_data_mins,"lowprod_data_mins.rds")
-
 ```
 
 **Repeat the process to find extrodinarily high productivity years, and extrodinarily wet and dry years.** 
@@ -132,10 +118,6 @@ highprod_data_maxs <- highprod_data_maxs %>%
 
 highprod_data_maxs <- highprod_data_maxs %>%
   mutate(leadNPPdev = leadNPP - NPPpixmean)
-
-write_rds(highprod_data_maxs, "highprod_data_max.rds")
-
-
 ```
 
 ```{r}
@@ -144,14 +126,6 @@ lowprod_data_mins$condition<-'Low Productivity'
 highprod_data_maxs$condition<-'High Productivity'
 productivityconditions<-rbind(lowprod_data_mins,highprod_data_maxs)
 ```
-
-```{r}
-setwd("~/Desktop")
-lowprod_data_mins<-readRDS("lowprod_data_mins.rds")
-highprod_data_maxs<-readRDS("highprod_data_max.rds")
-
-```
-
 
 ```{r}
 #Create productivity figure
@@ -184,7 +158,6 @@ productivityhist
 ```
 
 ```{r}
-
 droughtdata <- prod_data
 droughtdata <- droughtdata %>%
   group_by(x,y,ecoregion) %>%
@@ -211,12 +184,9 @@ droughtdata_mins <- droughtdata_mins %>%
 
 droughtdata_mins <- droughtdata_mins %>%
   mutate(leadNPPdev = leadNPP - NPPpixmean)
-
-write_rds(droughtdata_mins, "droughtdata_mins.rds")
 ```
 
 ```{r}
-#Import productivity data and duplicate it renaming it to wetdataa, repeat process this time taking the observations with the highest PPT deviation from the mean
 wetdata <- prod_data
 wetdata <- wetdata %>%
   group_by(x,y,ecoregion) %>%
@@ -243,8 +213,6 @@ wetdata_max <- wetdata_max %>%
 
 wetdata_max <- wetdata_max %>%
   mutate(leadNPPdev = leadNPP - NPPpixmean)
-
-write_rds(wetdata_max, "wetdata_max.rds")
 ```
 
 ```{r}
@@ -252,7 +220,6 @@ wetdata_max$condition<-'Wet'
 droughtdata_mins$condition<-'Dry'
 droughtconditions<-rbind(wetdata_max,droughtdata_mins)
 ```
-
 
 ```{r}
 #Create drought figure
@@ -280,6 +247,69 @@ droughthist<-ggplot(droughtconditions, aes(leadNPPdev, fill=condition))+
         legend.title = element_text(size=14), 
         legend.text = element_text(size=12))
 droughthist
+```
+
+
+```{r}
+#Create figure showing bivariate relationship between PPT deviation and following year in extremely wet/dry years. 
+bivariatedrought<-ggplot(data=droughtconditions, aes(x=PPTdev, y=leadNPPdev))+
+  geom_point(alpha=.5, pch=19, size=.4)+
+  geom_abline(intercept=0,slope=1, color="red")+
+  ylab("NPP Anomaly in Following Year")+
+  xlab("PPT Anomaly in Extreme Precipitation Years")+
+  scale_y_continuous(expand = c(0,0),limits = c(-700,1200))+
+  scale_x_continuous(expand = c(0,0),limits = c(-700,1200))+
+    theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=15),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(),
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"),
+    axis.ticks = element_blank())+
+  theme(axis.title.x =element_text(size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.y=element_text(size=18),
+        axis.text.x=element_text(size=18))
+bivariatedrought
+```
+
+```{r}
+#Create figure showing bivariate relationship between NPP deviation and following year NPP deviation in extremely productive/unproductive years. 
+bivariateprod<-ggplot(data=productivityconditions, aes(x=NPPdev, y=leadNPPdev))+
+  geom_point(alpha=.5, pch=19, size=.4)+
+  ylab("NPP Anomaly in Following Year")+
+  xlab("NPP Anomaly in Extreme Productivity Years")+
+  geom_abline(intercept=0,slope=1,color="red")+
+  scale_y_continuous(expand = c(0,0),limits = c(-500,600))+
+  scale_x_continuous(expand = c(0,0),limits = c(-500,600))+
+
+    theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=15),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"),
+    axis.ticks = element_blank())+
+  theme(axis.title.x =element_text(size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.y=element_text(size=18),
+        axis.text.x=element_text(size=18))
+bivariateprod
+```
+
+```{r}
+library(ggpubr)
+jpeg("fig 5.jpeg",
+     width=14,
+     height=10,
+     units="in",
+     res=300)
+figure5_4panel<-ggarrange(droughthist,bivariatedrought,productivityhist,bivariateprod,
+          nrow=2, ncol=2, labels=c("(a)","(b)","(c)","(d)"))
+figure5_4panel
+dev.off()
 ```
 
 **Create supporting figure 4** 
@@ -411,7 +441,6 @@ hotprod
 
 ```
 
-
 ```{r}
 #Separate drought data by ecoregion
 cali_drought<-droughtconditions[droughtconditions$ecoregion=='cali',]
@@ -541,7 +570,6 @@ hotdrought
 
 ```
 
-
 ```{r}
 #Combine figures and export
 jpeg("supporting fig 4.jpeg",
@@ -559,76 +587,15 @@ dev.off()
 ```
 
 
-**Create Supporting fig. 5**
 ```{r}
-#Create figure showing bivariate relationship between PPT deviation and following year in extremely wet/dry years. 
-bivariatedrought<-ggplot(data=droughtconditions, aes(x=PPTdev, y=leadNPPdev))+
-  geom_point(alpha=.5, pch=19, size=.4)+
-  geom_abline(intercept=0,slope=1, color="red")+
-  ylab("NPP Anomaly in Following Year")+
-  xlab("PPT Anomaly in Extreme Precipitation Years")+
-  scale_y_continuous(expand = c(0,0),limits = c(-700,1200))+
-  scale_x_continuous(expand = c(0,0),limits = c(-700,1200))+
-    theme(
-    strip.background =element_rect(fill="white"),
-    strip.text = element_text(size=15),
-    panel.background = element_rect(fill=NA),
-    panel.border = element_blank(),
-    axis.line.x = element_line(colour = "black"),
-    axis.line.y = element_line(colour = "black"),
-    axis.ticks = element_blank())+
-  theme(axis.title.x =element_text(size=18),
-        axis.title.y = element_text(size=18),
-        axis.text.y=element_text(size=18),
-        axis.text.x=element_text(size=18))
-bivariatedrought
-```
-
-```{r}
-#Create figure showing bivariate relationship between NPP deviation and following year NPP deviation in extremely productive/unproductive years. 
-bivariateprod<-ggplot(data=productivityconditions, aes(x=NPPdev, y=leadNPPdev))+
-  geom_point(alpha=.5, pch=19, size=.4)+
-  ylab("NPP Anomaly in Following Year")+
-  xlab("NPP Anomaly in Extreme Productivity Years")+
-  geom_abline(intercept=0,slope=1,color="red")+
-  scale_y_continuous(expand = c(0,0),limits = c(-500,600))+
-  scale_x_continuous(expand = c(0,0),limits = c(-500,600))+
-
-    theme(
-    strip.background =element_rect(fill="white"),
-    strip.text = element_text(size=15),
-    panel.background = element_rect(fill=NA),
-    panel.border = element_blank(), 
-    axis.line.x = element_line(colour = "black"),
-    axis.line.y = element_line(colour = "black"),
-    axis.ticks = element_blank())+
-  theme(axis.title.x =element_text(size=18),
-        axis.title.y = element_text(size=18),
-        axis.text.y=element_text(size=18),
-        axis.text.x=element_text(size=18))
-bivariateprod
-```
-
-```{r}
+#Calculate Spearmans coefficient values
 cor(lowprod_data_mins$NPPdev,lowprod_data_mins$leadNPPdev, method=c("spearman"))
 cor(highprod_data_maxs$NPPdev,highprod_data_maxs$leadNPPdev, method=c("spearman"))
 
 cor(droughtdata_mins$PPTdev,droughtdata_mins$leadNPPdev, method=c("spearman"))
 cor(wetdata_max$PPTdev,wetdata_max$leadNPPdev, method=c("spearman"))
+
+cor(productivityconditions$NPPdev,productivityconditions$leadNPPdev, method=c("spearman"))
+cor(droughtconditions$PPTdev,droughtconditions$leadNPPdev, method=c("spearman"))
+
 ```
-
-
-```{r}
-library(ggpubr)
-jpeg("fig 5.jpeg",
-     width=14,
-     height=10,
-     units="in",
-     res=300)
-figure5_4panel<-ggarrange(droughthist,bivariatedrought,productivityhist,bivariateprod,
-          nrow=2, ncol=2, labels=c("(a)","(b)","(c)","(d)"))
-figure5_4panel
-dev.off()
-```
-
-
