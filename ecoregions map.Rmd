@@ -23,7 +23,7 @@ mlr<-readRDS("mlrmodel_coef4.rds")
 
 ```{r}
 setwd("~/Desktop/rds")
-us<-readRDS("gadm36_USA_1_sp.rds")
+us<-readRDS("gadm36_USA_1_sp.rds") 
 us<-getData("GADM", country='USA', level=1,download=TRUE)
 states_all_sites <- us[us$NAME_1 %in% c('California','New Mexico','Arizona','Utah',
                                         'Arizona','Colorado','Washington','Wyoming',
@@ -43,13 +43,10 @@ mlrcoef_raster<- rasterize(x=mlr[, 1:2], # lon-lat data
                     fun=mean) # aggregate function
 ```
 
-
 ```{r}
 proj4string(mlrcoef_raster) <- CRS("+proj=longlat")
 mlrcoef_raster2<-projectRaster(mlrcoef_raster, crs=aea.proj)
 ```
-
-
 
 ```{r}
 # California Annuals
@@ -74,7 +71,6 @@ hotshapefile <-spTransform(hotshapefile, CRS(aea.proj))
 #sgs
 sgsshapefile<-readOGR(dsn="Shapefiles/sgs",layer="sgs_2")
 sgsshapefile <-spTransform(sgsshapefile, CRS(aea.proj))
-
 ```
 
 
@@ -106,7 +102,6 @@ dev.off()
 ```
 
 ```{r}
-
 # Load and display the hypothesis figure and ecoregion map as JPEG
 setwd("~/Desktop")
 image1 <- image_read("hyp.figure.jpeg")  # Replace with the actual path to your first image
@@ -134,8 +129,6 @@ jpeg("map of ecoregions and hyp.jpeg",
 # Combine the grid plots into a double-panel figure
 double_panel_figure <- grid.arrange(grid1, grid2, ncol = 2)
 dev.off()
-
-
 ```
 
 
