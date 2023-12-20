@@ -87,9 +87,9 @@ write_rds(lm_currentPPT_rsquared, "lm_currentPPT_rsquared2.rds")
 write_rds(lm_herb_rsquared, "lm_herb_rsquared2.rds")
 
 setwd('~/Desktop/Legacy Project')
-lm_map_coef<-readRDS("lm_map_coef1.rds")
-lm_herb_coef<-readRDS("lm_herb_coef1.rds")
-lm_currentPPT_coef<-readRDS("lm_currentPPT_coef1.rds")
+lm_map_coef<-readRDS("lm_map_coef2.rds")
+lm_herb_coef<-readRDS("lm_herb_coef2.rds")
+lm_currentPPT_coef<-readRDS("lm_currentPPT_coef2.rds")
 ```
 
 
@@ -159,12 +159,13 @@ herb_ecoregion_temporal_means$bottom99<-herb_ecoregion_temporal_means$mean-(2.57
 ```{r}
 #create figure 4
 mapInteraction<-ggplot()+
-  geom_density(data=map_coefficients, aes(x=Spatiotemporal, fill=ecoregion,after_stat(scaled)),alpha=.6)+ 
+  geom_density(data=map_coefficients, aes(x=Spatiotemporal, fill=ecoregion,after_stat(scaled)),alpha=.4)+ 
   scale_fill_manual(values=c(northern='lightblue',cali='grey',cold='gold',hot='firebrick3',sgs='green4'),
                     labels=c(northern='Northern mixed prairies',
                              cali='California annuals',cold='Cold deserts',hot='Hot deserts',sgs='Shortgrass steppe'))+
  xlab("Change in legacy effect \n per mm MAP")+
  ylab("Probability Density")+
+geom_vline(xintercept = 0, size =.75, linetype = "dashed", color = "black")+
  theme_classic() + 
   labs(fill = "Ecoregion")+
   theme(legend.key.size = unit(.75, 'cm'), #change legend key size
@@ -192,11 +193,12 @@ mapInteraction
 ```{r}
 #create figure 4
 herbInteraction<-ggplot()+
-  geom_density(data=herb_coefficients, aes(x=Spatiotemporal.herb, fill=ecoregion,after_stat(scaled)),alpha=.6)+ 
+  geom_density(data=herb_coefficients, aes(x=Spatiotemporal.herb, fill=ecoregion,after_stat(scaled)),alpha=.4)+ 
   scale_fill_manual(values=c(northern='lightblue',cali='grey',cold='gold',hot='firebrick3',sgs='green4'),
                     labels=c(northern='Northern mixed prairies',
                              cali='California annuals',cold='Cold deserts',hot='Hot deserts',sgs='Shortgrass steppe'))+
- xlab("Change in legacy effect \n per mm MAP")+
+ xlab("Change in legacy effect \n per % herbaceous NPP")+
+geom_vline(xintercept = 0, size =.75,linetype = "dashed", color = "black")+
  ylab("Probability Density")+
  theme_classic() + 
   labs(fill = "Ecoregion")+
@@ -220,7 +222,6 @@ herbInteraction
 ```
 
 ```{r}
-#Create supporting figure 3 
 jpeg("currentPPT figure.jpeg",
     width=10,
      height=7,
@@ -232,6 +233,7 @@ currentInteraction<-ggplot()+
                      labels=c("Hot Deserts","Cold Deserts","California Annuals", "Northern Mixed Prairies","Shortgrass Steppe"))+
  xlab("Change in sensitivity per legacy effect")+
  ylab("Probability Density")+
+geom_vline(xintercept = 0, linetype = "dashed", color = "black")+
  theme_classic() + 
   labs(fill = "Ecoregion")+
   theme(legend.key.size = unit(.75, 'cm'), #change legend key size
