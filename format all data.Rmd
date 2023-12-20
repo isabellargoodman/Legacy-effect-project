@@ -12,15 +12,16 @@ library(dplyr)
 library(tidyverse)
 ```
 
+
 ```{r}
 #load data 
-setwd("~/Desktop")
+setwd("~/Desktop/Legacy Project")
 npp_ppt_data<-readRDS("npp_ppt_data.rds")
 ```
 
 
 ```{r}
-CALIdat<-npp_ppt_data[npp_ppt_data$ecoregion=='cali',]
+CALIdata<-npp_ppt_data[npp_ppt_data$ecoregion=='cali',]
 COLDdata<-npp_ppt_data[npp_ppt_data$ecoregion=='cold',]
 NSdata<-npp_ppt_data[npp_ppt_data$ecoregion=='northern',]
 SGSdata<-npp_ppt_data[npp_ppt_data$ecoregion=='sgs',]
@@ -29,39 +30,39 @@ HOTdata<-npp_ppt_data[npp_ppt_data$ecoregion=='hot',]
 
 ```{r}
 
-#Create a logged variable for both PPT and NPP. Lag by 282447 observations(number of observations/pixel per year) so that the lagged variables are exactly 1 year behind 
-CALIdata$lagPPT<-as.numeric(lag(CALIdata$PPT, 35893))
-CALIdata$lagNPP<-as.numeric(lag(CALIdata$NPP, 35893))
-CALIdata$lagTEMP<-as.numeric(lag(CALIdata$temp, 35893))
+#Create a logged variable for both PPT and NPP. Lag by 35755 observations(number of observations/pixel per year) so that the lagged variables are exactly 1 year behind 
+CALIdata$lagPPT<-as.numeric(lag(CALIdata$PPT, 35755))
+CALIdata$lagNPP<-as.numeric(lag(CALIdata$NPP, 35755))
+CALIdata$lagTEMP<-as.numeric(lag(CALIdata$temp, 35755))
 CALIdata<-na.omit(CALIdata)
 ```
 
 #Repeat for all ecoregions. 
 ```{r}
-COLDdata$lagPPT<-as.numeric(lag(COLDdata$PPT, 324650))
-COLDdata$lagNPP<-as.numeric(lag(COLDdata$NPP, 324650))
-COLDdata$lagTEMP<-as.numeric(lag(COLDdata$temp, 324650))
+COLDdata$lagPPT<-as.numeric(lag(COLDdata$PPT, 324062))
+COLDdata$lagNPP<-as.numeric(lag(COLDdata$NPP, 324062))
+COLDdata$lagTEMP<-as.numeric(lag(COLDdata$temp, 324062))
 COLDdata<-na.omit(COLDdata)
 ```
 
 ```{r}
-NSdata$lagPPT<-as.numeric(lag(NSdata$PPT, 312381))
-NSdata$lagNPP<-as.numeric(lag(NSdata$NPP, 312381))
-NSdata$lagTEMP<-as.numeric(lag(NSdata$temp, 312381))
+NSdata$lagPPT<-as.numeric(lag(NSdata$PPT, 312160))
+NSdata$lagNPP<-as.numeric(lag(NSdata$NPP, 312160))
+NSdata$lagTEMP<-as.numeric(lag(NSdata$temp, 312160))
 NSdata<-na.omit(NSdata)
 ```
 
 ```{r}
-SGSdata$lagPPT<-as.numeric(lag(SGSdata$PPT, 122277))
-SGSdata$lagNPP<-as.numeric(lag(SGSdata$NPP, 122277))
-SGSdata$lagTEMP<-as.numeric(lag(SGSdata$temp, 122277))
+SGSdata$lagPPT<-as.numeric(lag(SGSdata$PPT, 122179))
+SGSdata$lagNPP<-as.numeric(lag(SGSdata$NPP, 122179))
+SGSdata$lagTEMP<-as.numeric(lag(SGSdata$temp, 122179))
 SGSdata<-na.omit(SGSdata)
 ```
 
 ```{r}
-HOTdata$lagPPT<-as.numeric(lag(HOTdata$PPT, 143668))
-HOTdata$lagNPP<-as.numeric(lag(HOTdata$NPP, 143668))
-HOTdata$lagTEMP<-as.numeric(lag(HOTdata$temp, 143668))
+HOTdata$lagPPT<-as.numeric(lag(HOTdata$PPT, 143420))
+HOTdata$lagNPP<-as.numeric(lag(HOTdata$NPP, 143420))
+HOTdata$lagTEMP<-as.numeric(lag(HOTdata$temp, 143420))
 HOTdata<-na.omit(HOTdata)
 ```
 
@@ -86,10 +87,6 @@ legacydata<-legacydata%>%
     TEMPdev = temp-TEMPpixmean,
     lagTEMPdev = lagTEMP - TEMPpixmean)
     
-#remove unneeded columns
-legacydata<-legacydata%>%
-  select(-pue,-PUEsd,-minPUE,-maxPUE,-meanPUE,)
-
 
 #Create a column for whether or not an observation falls above or below MAP 
 legacydata<-legacydata%>%
@@ -103,6 +100,5 @@ legacydata$herbaceousNPP<-legacydata$afgNPP+legacydata$pfgNPP
 legacydata$fracHERB<-legacydata$herbaceousNPP/legacydata$NPP
 
 saveRDS(legacydata,file.path("legacydata.rds"))
-
 
 ```
