@@ -36,12 +36,11 @@ nppcali<-lapply(dirNPPcali,function(dirNPPcali){
   rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdf)
   })
-
 nppdfcali<-bind_rows(nppcali) #Bind all rows together
 
+#Process PPT geotiff files 
 filepathPPTcali<-file.path("~/Desktop/Legacy Project/cali annuals/prcp geotifs CALI")
 dirPPTcali<-dir(filepathPPTcali, full.names = T)
-
 pptcali<-lapply(dirPPTcali,function(dirPPTcali){ 
   rastersprcp<-stack(dirPPTcali)
   resampled<-resample(rastersprcp,raster1986cali)
@@ -52,12 +51,11 @@ pptcali<-lapply(dirPPTcali,function(dirPPTcali){
   rasterdfprcp <- rasterdfprcp%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdfprcp)
   })
-
 pptdfcali<-bind_rows(pptcali) 
 
+#Process temperature geotiff files
 filepathTEMPcali<-file.path("~/Desktop/Legacy Project/cali annuals/cali temp")
 dirTEMPcali<-dir(filepathTEMPcali, full.names = T)
-
 tempcali<-lapply(dirTEMPcali,function(dirTEMPcali){ 
   rasters<-stack(dirTEMPcali)
   resampled<-resample(rasters,raster1986cali)
@@ -69,7 +67,6 @@ tempcali<-lapply(dirTEMPcali,function(dirTEMPcali){
   rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdf)
   })
-
 tempdfcali<-bind_rows(tempcali)
 
 #Left join the NPP dataframe, and the PPT dataframe, by x, y and year.
@@ -77,18 +74,16 @@ CALIdata <- pptdfcali %>%
   left_join(nppdfcali, by = c("x", "y", "year"))%>% 
   left_join(tempdfcali, by = c("x", "y", "year"))
 
+#Label the ecoregion 
 CALIdata$ecoregion<-"cali"
 ```
 
+#Repeat the process for all ecoregions
 ```{r}
-
 setwd("~/Desktop/Legacy Project/cold deserts/cold deserts npp") #Set working directory for COLD annuals geotifs
 raster1986cold<-stack("1986nppcold.tif")
-
 filepathNPPcold<-file.path("~/Desktop/Legacy Project/cold deserts/cold deserts npp")
-
 dirNPPcold<-dir(filepathNPPcold, full.names = T)
-
 nppcold<-lapply(dirNPPcold,function(dirNPPcold){ 
   rasters<-stack(dirNPPcold)
   rasterdata<-rasterToPoints(rasters)
@@ -99,12 +94,10 @@ nppcold<-lapply(dirNPPcold,function(dirNPPcold){
   rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdf)
   })
-
 nppdfcold<-bind_rows(nppcold)
 
 filepathPPTcold<-file.path("~/Desktop/Legacy Project/cold deserts/cold deserts prcp")
 dirPPTcold<-dir(filepathPPTcold, full.names = T)
-
 pptcold<-lapply(dirPPTcold,function(dirPPTcold){ 
   rastersprcp<-stack(dirPPTcold)
   resampled<-resample(rastersprcp,raster1986cold)
@@ -115,13 +108,10 @@ pptcold<-lapply(dirPPTcold,function(dirPPTcold){
   rasterdfprcp <- rasterdfprcp%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdfprcp)
   })
-
 pptdfcold<-bind_rows(pptcold) 
-
 
 filepathTEMPcold<-file.path("~/Desktop/Legacy Project/cold deserts/cold temp")
 dirTEMPcold<-dir(filepathTEMPcold, full.names = T)
-
 tempcold<-lapply(dirTEMPcold,function(dirTEMPcold){ 
   rasters<-stack(dirTEMPcold)
   resampled<-resample(rasters,raster1986cold)
@@ -133,27 +123,18 @@ tempcold<-lapply(dirTEMPcold,function(dirTEMPcold){
   rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdf)
   })
-
 tempdfcold<-bind_rows(tempcold)
 
 COLDdata<-left_join(pptdfcold,nppdfcold, by=c("x","y","year"))
 COLDdata<-left_join(COLDdata,tempdfcold,by=c("x","y","year"))
-
 COLDdata$ecoregion<-"cold"
-
-write_csv(COLDdata,"COLDdata.csv")
-
-
 ```
 
 ```{r}
 setwd('~/Desktop/Legacy Project/ns/geotiffs NS ') #Set working directory for ns annuals geotifs
 raster1986ns<-stack("1986npp.tif")
-
 filepathNPPns<-file.path('~/Desktop/Legacy Project/ns/geotiffs NS ') 
-
 dirNPPns<-dir(filepathNPPns, full.names = T)
-
 nppns<-lapply(dirNPPns,function(dirNPPns){ 
   rasters<-stack(dirNPPns)
   rasterdata<-rasterToPoints(rasters)
@@ -164,12 +145,10 @@ nppns<-lapply(dirNPPns,function(dirNPPns){
   rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdf)
   })
-
 nppdfns<-bind_rows(nppns)
 
 filepathPPTns<-file.path("~/Desktop/Legacy Project/ns/prcp geotifs NS")
 dirPPTns<-dir(filepathPPTns, full.names = T)
-
 pptns<-lapply(dirPPTns,function(dirPPTns){ 
   rastersprcp<-stack(dirPPTns)
   resampled<-resample(rastersprcp,raster1986ns)
@@ -180,12 +159,10 @@ pptns<-lapply(dirPPTns,function(dirPPTns){
   rasterdfprcp <- rasterdfprcp%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdfprcp)
   })
-
 pptdfns<-bind_rows(pptns) 
 
 filepathTEMPns<-file.path("~/Desktop/Legacy Project/ns/ns temp")
 dirTEMPns<-dir(filepathTEMPns, full.names = T)
-
 tempns<-lapply(dirTEMPns,function(dirTEMPns){ 
   rasters<-stack(dirTEMPns)
   resampled<-resample(rasters,raster1986ns)
@@ -197,12 +174,10 @@ tempns<-lapply(dirTEMPns,function(dirTEMPns){
   rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdf)
   })
-
 tempdfns<-bind_rows(tempns)
 
 NSdata<-left_join(pptdfns,nppdfns, by=c("x","y","year"))
 NSdata<-left_join(NSdata,tempdfns,by=c("x", "y", "year"))
-
 NSdata$ecoregion<-"northern"
 ```
 
@@ -210,11 +185,8 @@ NSdata$ecoregion<-"northern"
 ```{r}
 setwd("~/Desktop/Legacy Project/sgs/SGS npp") #Set working directory for ns annuals geotifs
 raster1986sgs<-stack("1986nppSGS.tif")
-
 filepathNPPsgs<-file.path('~/Desktop/Legacy Project/sgs/SGS npp')
-
 dirNPPsgs<-dir(filepathNPPsgs, full.names = T)
-
 nppsgs<-lapply(dirNPPsgs,function(dirNPPsgs){ 
   rasters<-stack(dirNPPsgs)
   rasterdata<-rasterToPoints(rasters)
@@ -225,12 +197,10 @@ nppsgs<-lapply(dirNPPsgs,function(dirNPPsgs){
   rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdf)
   })
-
 nppdfsgs<-bind_rows(nppsgs)
 
 filepathPPTsgs<-file.path("~/Desktop/Legacy Project/sgs/SGS prcp")
 dirPPTsgs<-dir(filepathPPTsgs, full.names = T)
-
 pptsgs<-lapply(dirPPTsgs,function(dirPPTsgs){ 
   rastersprcp<-stack(dirPPTsgs)
   resampled<-resample(rastersprcp,raster1986sgs)
@@ -241,12 +211,10 @@ pptsgs<-lapply(dirPPTsgs,function(dirPPTsgs){
   rasterdfprcp <- rasterdfprcp%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdfprcp)
   })
-
 pptdfsgs<-bind_rows(pptsgs) 
 
 filepathTEMPsgs<-file.path("~/Desktop/Legacy Project/sgs/sgs temp")
 dirTEMPsgs<-dir(filepathTEMPsgs, full.names = T)
-
 tempsgs<-lapply(dirTEMPsgs,function(dirTEMPsgs){ 
   rasters<-stack(dirTEMPsgs)
   resampled<-resample(rasters,raster1986sgs)
@@ -258,23 +226,18 @@ tempsgs<-lapply(dirTEMPsgs,function(dirTEMPsgs){
   rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdf)
   })
-
 tempdfsgs<-bind_rows(tempsgs)
 
 SGSdata<-left_join(pptdfsgs,nppdfsgs, by=c("x","y","year"))
 SGSdata<-left_join(SGSdata,tempdfsgs, by=c("x","y","year"))
-
 SGSdata$ecoregion<-"sgs"
 ```
 
 ```{r}
 setwd("~/Desktop/Legacy Project/Hot deserts/hot deserts NPP") #Set working directory for ns annuals geotifs
 raster1986hot<-stack("1986nppHOT.tif")
-
 filepathNPPhot<-file.path('~/Desktop/Legacy Project/hot deserts/hot deserts NPP')
-
 dirNPPhot<-dir(filepathNPPhot, full.names = T)
-
 npphot<-lapply(dirNPPhot,function(dirNPPhot){ 
   rasters<-stack(dirNPPhot)
   rasterdata<-rasterToPoints(rasters)
@@ -285,7 +248,6 @@ npphot<-lapply(dirNPPhot,function(dirNPPhot){
   rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdf)
   })
-
 nppdfhot<-bind_rows(npphot)
 
 filepathPPThot<-file.path("~/Desktop/Legacy Project/Hot deserts/hot deserts PRCP")
@@ -301,7 +263,6 @@ ppthot<-lapply(dirPPThot,function(dirPPThot){
   rasterdfprcp <- rasterdfprcp%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdfprcp)
   })
-
 pptdfhot<-bind_rows(ppthot) 
 
 filepathTEMPhot<-file.path("~/Desktop/Legacy Project/Hot deserts/hot temp")
@@ -318,12 +279,10 @@ temphot<-lapply(dirTEMPhot,function(dirTEMPhot){
   rasterdf <- rasterdf%>%mutate_if(is.numeric, round, digits = 4)
   (rasterdf)
   })
-
 tempdfhot<-bind_rows(temphot)
 
 HOTdata<-left_join(pptdfhot,nppdfhot, by=c("x","y","year"))
 HOTdata<-left_join(HOTdata, tempdfhot, by=c("x","y","year"))
-
 HOTdata$ecoregion<-"hot"
 ```
 
@@ -331,9 +290,9 @@ HOTdata$ecoregion<-"hot"
 npp_ppt_data<-rbind(CALIdata,COLDdata,HOTdata,NSdata,SGSdata)%>%
   drop_na()
 
+#Rename precipitation column
 npp_ppt_data<-npp_ppt_data%>%
   rename("PPT"="prcp")
-
 
 #Correct NPP units 
 npp_ppt_data <- npp_ppt_data %>%
@@ -342,11 +301,13 @@ npp_ppt_data <- npp_ppt_data %>%
 #Create a unique ID for each pixel
 npp_ppt_data <-transform(npp_ppt_data,ID=as.numeric((interaction(x,y, drop=TRUE))))
 
+#Remove any NPP values less than 10
 npp_ppt_data<-npp_ppt_data%>%
   group_by(ID)%>%
   filter(!any(is.na(NPP)))%>%
   filter(!any(NPP<10))
 
+#Remove and rows that have high or low PUE value 
 npp_ppt_data <- npp_ppt_data %>%
   group_by(ID) %>%
   mutate(pue = mean(NPP) / mean(PPT)) %>%
@@ -366,10 +327,11 @@ npp_ppt_data<-npp_ppt_data%>%
   filter(!any(pue<minPUE))%>%
   filter(!any(pue>maxPUE))
 
-npp_ppt_data<-subset(npp_ppt_data, select=-c("pue","PUEsd","minPUE","maxPUE","meanPUE"))
+#Remove unneeded columns
+npp_ppt_data<-npp_ppt_data%>%
+  select(-pue,-PUEsd,-minPUE,-maxPUE,-meanPUE,)
 
-saveRDS(npp_ppt_data,file="npp_ppt_data.rds",compress=TRUE)
-
-
+#Export as .rds file
+write_rds(npp_ppt_data, "npp_ppt_data.rds")
 ```
 
