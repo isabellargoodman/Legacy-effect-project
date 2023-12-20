@@ -15,14 +15,9 @@ library(ggpubr)
 library(scico)
 library(ggpubr)
 
+#Load data 
 setwd("~/Desktop")
 legacydata<-readRDS("legacydata.rds")
-
-cali_ecoregion<-legacydata[legacydata$ecoregion=='cali',]
-cold_ecoregion<-legacydata[legacydata$ecoregion=='cold',]
-northern_ecoregion<-legacydata[legacydata$ecoregion=='northern',]
-sgs_ecoregion<-legacydata[legacydata$ecoregion=='sgs',]
-hot_ecoregion<-legacydata[legacydata$ecoregion=='hot',]
 
 #Run per pixel model on equation 4 and extract coefficients to map
 mlrmodel<-legacydata%>%
@@ -33,7 +28,6 @@ mlrmodel<-legacydata%>%
 #select only needed columns
 mlrmodel <- mlrmodel %>%
   select(x, y, coef)
-
 
 #Export data
 write_rds(mlrmodel, "perpixelmodel_final.rds")
@@ -73,8 +67,6 @@ aea.proj <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_
 states_all_sites <- spTransform(states_all_sites, CRS(aea.proj))
 ```
 
-
-
 ```{r}
 #Change projection
 proj4string(mlrcoefsubset) <- CRS("+proj=longlat")
@@ -82,7 +74,6 @@ mlrcoefsubset2<-projectRaster(mlrcoefsubset, crs=aea.proj)
 mlrcoefsubsetdf<-rasterToPoints(mlrcoefsubset2)
 mlrcoefsubsetdf<-as.data.frame(mlrcoefsubsetdf)
 ```
-
 
 ```{r}
 #Create map
@@ -135,11 +126,9 @@ ggarrange(map,legeffect_byEco,labels=c('(a)','(b)'))
 dev.off()
 ```
 
-
 ```{r}
 #merge data so that perpixel coefficients and all other data are together. 
 merged<-merge(legacydata,mlrmodel,by=c("x","y"))
-
 
 #calculate the coefficient of variation for NPP. 
 merged <- merged %>%
@@ -149,18 +138,15 @@ merged <- merged %>%
     mean_NPP = mean(NPP),
     cv = NPPsd / mean_NPP
   )
-
 #group by x,y,ecoregion
 CVdata<-merged%>%
   group_by(x,y,ecoregion)%>%
   summarise_at(vars(MAP,coef,cv),
                list(mean=mean))
-  
 ```
 
 ```{r}
 #create supporting figure 5 
-
 jpeg("CV and MAP.jpeg",
      width=16,
      height=12,
@@ -179,11 +165,10 @@ ggplot(data=CVdata, aes(x=MAP_mean,y=cv_mean))+
         axis.text.y = element_text(size=16),
         strip.text = element_text(size=14))
 dev.off()
-
 ```
 
 ```{r}
-
+#Create supporting figure 7
 jpeg("CV and legacy effect.jpeg",
      width=16,
      height=12,
@@ -194,6 +179,43 @@ ggplot(data=CVdata, aes(x=cv_mean,y=coef_mean))+
   scale_y_continuous(expand=c(0,0))+
   geom_smooth(aes(group=ecoregion), method="lm", color="red", size=.5, se=FALSE)+
   labs(x="Coefficient of Variation", y="Strength of legacy effect")+
+  facet_wrap(~ecoregion,scales="free")+
+  theme_classic()+
+   theme(axis.title.x =element_text( size=20),
+        axis.title.y = element_text(size=20),
+        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        strip.text = element_text(size=14))
+dev.off()
+```
+
+#Create supporting figure 6
+```{r}
+CVherb <- legacydata %>%
+  group_by(x, y) %>%
+  mutate(
+    NPPsd = sd(NPP),
+    mean_NPP = mean(NPP),
+    cv = NPPsd / mean_NPP
+  )
+
+CVherb<-CVherb%>%
+  group_by(x,y,ecoregion)%>%
+  summarise_at(vars(fracHERB,cv),
+               list(mean=mean))
+```
+
+```{r}
+jpeg("supporting fig 6.jpeg",
+     width=16,
+     height=12,
+     units="in",
+     res=300)
+ggplot(data=CVherb, aes(x=fracHERB_mean,y=cv_mean))+
+  geom_point(size=.2,alpha=.5)+
+  scale_y_continuous(expand=c(0,0))+
+  geom_smooth(aes(group=ecoregion), method="lm", color="red", size=.5, se=FALSE)+
+  labs(x="% herbaceous NPP", y="Coefficient of variation ")+
   facet_wrap(~ecoregion,scales="free")+
   theme_classic()+
    theme(axis.title.x =element_text( size=20),
