@@ -18,7 +18,7 @@ library(data.table)
 library(ggpubr)
 
 #Load data
-setwd("~/OneDrive - Montana State University/Work stuff")
+setwd("~/Desktop")
 legacydata<-readRDS("legacydata.rds")
 ```
 
@@ -26,6 +26,9 @@ legacydata<-readRDS("legacydata.rds")
 ```{r}
 #Separate by ecoregion
 cali_ecoregion<-legacydata[legacydata$ecoregion=='cali',]
+
+oops<-legacydata%>%
+  filter(ecoregion=="cali")
 
 #Create "lead" variable for NPP, PPT, so current year can be compared to following year 
 cali_ecoregion$leadNPP<-as.numeric(lead(cali_ecoregion$NPP, 35755))

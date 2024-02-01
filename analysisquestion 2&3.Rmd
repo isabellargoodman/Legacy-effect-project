@@ -274,7 +274,7 @@ dev.off()
 
 ```{r}
 #create figure 3b
-jpeg("legacy effect by ecoregion_herb.jpeg",
+jpeg("legacy effect by ecoregion.jpeg",
      width=18,
      height=10,
      units="in",
@@ -308,110 +308,4 @@ legeffect_byEco
 dev.off()
 
 ```
-
-```{r}
-# Assuming df is your data frame
-# Convert 'PPTdev' and 'lagNPPDev' to factors
-legacydata 
-legacydata$PPTdev <- as.factor(legacydata$PPTdev)
-legacydata$lagNPPdev <- as.factor(legacydata$lagNPPdev)
-
-# Load required libraries
-library(ggplot2)
-
-# Create an interaction plot
-interaction.plot(
-  x.factor = df$PPTdev,
-  trace.factor = df$lagNPPDev,
-  response = df$NPPdev,
-  type = "b",  # "b" for points connected by lines
-  legend = TRUE,
-  col = c("blue", "red"),  # customize colors if needed
-  pch = c(16, 17)  # customize symbols if needed
-)
-
-# Add labels and title
-title("Interaction Plot: PPTdev vs. NPPdev by lagNPPDev")
-xlabel("PPTdev")
-ylabel("NPPdev")
-
-# Show the plot
-
-```
-
-```{r}
-
-set.seed(123)
-
-total_rows <- nrow(calileggy)
-
-sample_size <- round(0.0001 * total_rows)
-
-# Randomly select 10% of the dataset
-random_sample <- calileggy[sample(1:total_rows, size = sample_size), ]
-
-random <- legacydata[sample(nrow(legacydata), 1), ]
-
-
-print(random_observation)
-
-calicurrent<-current_coefficients%>%
-  filter(ecoregion=="cali")
-
-calileggy<-legacydata%>%
-  filter(ecoregion=="cali")
-
-randomcali<-calileggy%>%
-  filter(ID==308569)
-
-ggplot(randomcali,aes(x=PPT,y=NPP))+
-  geom_point()+
-  stat_smooth(method="lm")
-  
-```
-
-```{r}
-random_sample$PPTdev <- as.factor(random_sample$PPTdev)   
-random_sample$lagNPPdev <- as.factor(random_sample$lagNPPdev)
-
-interaction.plot(
-  x.factor = random_sample$PPTdev,
-  trace.factor = random_sample$lagNPPdev,
-  response = random_sample$NPPdev,
-  type = "b",  # "b" for points connected by lines
-  legend = TRUE,
-  col = c("blue", "red"),  # customize colors if needed
-  pch = c(16, 17)  # customize symbols if needed
-)
-
-# Add labels and title
-title("Interaction Plot: PPTdev vs. NPPdev by lagNPPDev")
-xlabel("PPTdev")
-ylabel("NPPdev")
-
-# Show the plot
-
-```
-```{r}
-
-
-lm<-lm(NPPdev~PPTdev+lagNPPdev+PPTdev:lagNPPdev, data=calileggy) 
-summary(lm)
-```
-
-
-```{r}
-# Example using ggplot2
-library(ggplot2)
-
-ggplot(random_sample, aes(x = PPTdev, y = NPPdev, color = lagNPPdev)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Interaction Plot", x = "PPTdev", y = "NPPdev", color = "lagNPPdev")+
-  theme(legend.position = "none")
-
-```
-
-
-
 
