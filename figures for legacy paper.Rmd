@@ -16,7 +16,7 @@ library(scico)
 library(ggpubr)
 
 #Load data 
-setwd("~/Desktop")
+setwd("~/Desktop/rds")
 legacydata<-readRDS("legacydata.rds")
 
 #Run per pixel model on equation 4 and extract coefficients to map

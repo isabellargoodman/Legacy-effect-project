@@ -13,10 +13,9 @@ library(plotrix)
 library(ggpubr)
 
 #Load data
+#Load data
 setwd("~/Desktop")
-legacydata<-readRDS("legacydata1.rds")
-
-
+legacydata<-readRDS("legacydata.rds")
 ```
 
 ```{r}
@@ -45,7 +44,7 @@ lm_TEMP_rsquared<-list()
 
 
 ```{r}
-for(i in 1:1000 )
+for(i in 1:1000)
 {
   # Stratify by region and the MAP of the region #
   test.strat.northern_mixed<-stratified(northern_ecoregion, "above_below", 0.0001)
@@ -77,18 +76,21 @@ lm_TEMP_rsquared[[i]]<-(df.r.squared.create(lm_TEMP))
 }
 ```
 
+
 ```{r}
-write_rds(lm_PPT_coef,"lm_PPT_coef.rds")
-write_rds(lm_NPP_coef,"lm_NPP_coef.rds")
-write_rds(lm_TEMP_coef,"lm_TEMP_coef.rds")
+setwd("~/Desktop/Legacy Project")
+lm_PPT_coef<-readRDS("lm_PPT_coef1.rds")
+lm_NPP_coef<-readRDS("lm_NPP_coef1.rds")
+lm_TEmp_coef<-readRDS("lm_TEMP_coef1.rds")
 
-write_rds(lm_PPT_aic,"lm_PPT_aic.rds")
-write_rds(lm_NPP_aic,"lm_NPP_aic.rds")
-write_rds(lm_TEMP_aic,"lm_TEMP_rsquared.rds")
+lm_PPT_aic<-readRDS("lm_PPT_aic1.rds")
+lm_NPP_aic<-readRDS("lm_NPP_aic1.rds")
+lm_TEMP_aic<-readRDS("lm_TEMP_aic1.rds")
 
-write_rds(lm_PPT_rsquared,"lm_PPT_rsquared.rds")
-write_rds(lm_NPP_rsquared,"lm_NPP_rsquared.rds")
-write_rds(lm_TEMP_rsquared,"lm_TEMP_rsquared.rds")
+lm_PPT_rsquared<-readRDS("lm_PPT_rsquared1.rds")
+lm_NPP_rsquared<-readRDS("lm_NPP_rsquared1.rds")
+lm_TEMP_rsquared<-readRDS("lm_TEMP_rsquared1.rds")
+
 ```
 
 
@@ -152,21 +154,107 @@ mean_coefficients
 mean_aic<-aic.binded%>%
   group_by(model)%>%
   summarise_at(vars(aic),
-               list(mean))
+               list(meanAIC=mean,
+                    SE=std.error))
 mean_aic
 
 mean_rsquared<-rsquared.binded%>%
   group_by(model)%>%
   summarise_at(vars(r.squared),
-               list(mean))
+               list(rsquared=mean,
+                    SE=std.error))
 mean_rsquared
+
+
+mean_rsquared$upperCI<-mean_rsquared$rsquared+(2.576*mean_rsquared$SE)
+mean_rsquared$lowerCI<-mean_rsquared$rsquared-(2.576*mean_rsquared$SE)
+
+
+mean_aic$upperCI<-mean_aic$meanAIC+(2.576*mean_aic$SE)
+mean_aic$lowerCI<-mean_aic$meanAIC-(2.576*mean_aic$SE)
+
+```
+
+
+```{r}
+max(aic.binded$aic)
+aicDensity<-ggplot(aic.binded, aes(aic, fill=model))+
+  geom_density(data=aic.binded, aes(x=aic, fill=model, after_stat(scaled)), alpha=.5)+
+  scale_x_continuous(limits = c(31700, 34000))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  
+  scale_fill_manual(values = c("dodgerblue2", "darkolivegreen3","orangered2"), labels = c("NPP","PPT","TEMP"))+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,1.01))+
+  ylab("Probability Density")+
+  xlab("AIC Score")+
+  theme(axis.title.x =element_text( size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=14), 
+        legend.text = element_text(size=12))
+aicDensity
+```
+
+```{r}
+rsquaredDensity<-ggplot(rsquared.binded, aes(r.squared, fill=model))+
+  geom_density(data=rsquared.binded, aes(x=r.squared, fill=model, after_stat(scaled)), alpha=.6)+
+  scale_x_continuous(limits = c(-.01, .3))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  
+  scale_fill_manual(values = c("dodgerblue2", "darkolivegreen3","orangered2"), labels = c("NPP","PPT","TEMP"))+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,1.01))+
+  ylab("Probability Density")+
+  xlab("R Squared Value")+
+  theme(axis.title.x =element_text( size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=14), 
+        legend.text = element_text(size=12))
+rsquaredDensity
+```
+
+```{r}
+jpeg("Supporting fig 1(density) final.jpeg",
+     width=12,
+     height=6,
+     units="in",
+     res=300)
+rsquaredaicDensity<-ggarrange(aicDensity, rsquaredDensity,
+          nrow=1, ncol=2,common.legend = TRUE, labels=c('(a)','(b)'), hjust=-.1,  font.label = list(size = 16))
+rsquaredaicDensity
+dev.off()
 ```
 
 ```{r}
 #create supporting figure 1 
-rsquaredfigure<-ggplot(mean_rsquared,aes(y=r.squared, x=model, fill=model))+
+rsquaredfigure<-ggplot(mean_rsquared,aes(y=rsquared, x=model, fill=model))+
   ylab("Mean R-squared")+
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
+  geom_errorbar(aes(ymin = rsquared - SE, ymax = rsquared + SE), color = "black",width=.4) +
   geom_bar(stat="identity", position="dodge")+
   scale_fill_manual(values = c("darkslategray3", "indianred","purple3"))+
   rremove("grid")+
@@ -237,6 +325,7 @@ meanTEMP
 meanTEMP+(2.576*SETEMP)
 meanTEMP-(2.576*SETEMP)
 
+ z_score <- qnorm(0.995) 
 ```
 
 ```{r}

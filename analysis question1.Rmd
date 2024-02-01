@@ -79,6 +79,15 @@ write_rds(lm_onlyPPT_rsquared,"lm_onlyPPT_rsquared.rds")
 write_rds(lm_PPTnpp_rsquared,"lm_PPTnpp_rsquared.rds")
 ```
 
+```{r}
+setwd("~/Desktop/Legacy Project")
+lm_onlyPPT_aic<-readRDS("lm_onlyPPT_aic.rds")
+lm_onlyPPT_rsquared<-readRDS("lm_onlyPPT_rsquared.rds")
+setwd("~/Desktop/Legacy Project")
+lm_PPTnpp_aic<-readRDS("lm_PPTnpp_aic.rds")
+lm_PPTnpp_rsquared<-readRDS("lm_PPTnpp_rsquared.rds")
+
+```
 
 ```{r}
 #Store Coefficients from the models in the lists
@@ -93,12 +102,15 @@ PPTnpp_coefficients <- PPTnpp_coefficients %>%
        rename("coef" = "coefficient.temporal")
 
 coefficients<-rbind(onlyPPT_coefficients,PPTnpp_coefficients)
+
 write_rds(onlyPPT_coefficients,"onlyPPT_coefficients2.rds")
 write_rds(PPTnpp_coefficients,"PPTnpp_coefficients2.rds")
 
 PPTnpp_coefficients<-readRDS("PPTnpp_coefficients2.rds")
 
 ```
+
+
 
 ```{r}
 #Store AIC scores from the models in the lists
@@ -126,6 +138,18 @@ write_rds(rsquared.binded,"rsquared.binded2.rds")
 ```
 
 ```{r}
+setwd("~/Desktop")
+aic.binded<-readRDS("aic.binded2.rds")
+rsquared.binded<-readRDS("rsquared.binded2.rds")
+```
+
+```{r}
+
+map_ecoregion_temporal_means$top99<-map_ecoregion_temporal_means$mean+(2.576*map_ecoregion_temporal_means$se)
+map_ecoregion_temporal_means$bottom99<-map_ecoregion_temporal_means$mean-(2.576*map_ecoregion_temporal_means$se)
+```
+
+```{r}
 #calculate mean coefficients, AIC, and R-squared values
 mean_coefficients<-PPTnpp_coefficients%>%
   group_by(model)%>%
@@ -136,21 +160,40 @@ mean_coefficients
 mean_aic<-aic.binded%>%
   group_by(model)%>%
   summarise_at(vars(aic),
-               list(mean))
-mean_aic
+               list(mean=mean,
+                    SE=std.error))
+
+mean_aic$top99<-mean_aic$mean+(2.576*mean_aic$SE)
+mean_aic$bottom99<-mean_aic$mean-(2.576*mean_aic$SE)
+
 
 mean_rsquared<-rsquared.binded%>%
   group_by(model)%>%
   summarise_at(vars(r.squared),
-               list(mean))
-mean_rsquared
+               list(mean=mean,
+                    SE=std.error))
+
+mean_rsquared$top99<-mean_rsquared$mean+(2.576*mean_rsquared$SE)
+mean_rsquared$bottom99<-mean_rsquared$mean-(2.576*mean_rsquared$SE)
+
+
+mean_aic$upperCI<-mean_aic$meanAIC+(2.576*mean_aic$SE)
+mean_aic$lowerCI<-mean_aic$meanAIC-(2.576*mean_aic$SE)
+
+
 ```
 
 ```{r}
 #create supporting figure 2
-rsquaredfigure<-ggplot(mean_rsquared,aes(y=r.squared, x=model, fill=model))+
+rsquaredfigure<-ggplot(mean_rsquared,aes(y=mean, x=model, fill=model))+
   ylab("Mean R-squared")+
   xlab("Model")+
+  geom_errorbar(aes(x = model, ymin = mean - SE, ymax = mean + SE), 
+                position = position_dodge(width = 0.9), 
+                width = 0.25,  # adjust the width of the error bars
+                colour = "black", 
+                alpha = 0.9, 
+                size = 1.3) + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
   geom_bar(stat="identity", position="dodge")+
   scale_fill_manual(values = c("darkslategray3", "indianred"),
@@ -171,14 +214,91 @@ rsquaredfigure
 ```
 
 ```{r}
+aicDensity<-ggplot(aic.binded, aes(aic, fill=model))+
+  geom_density(data=aic.binded, aes(x=aic, fill=model, after_stat(scaled)), alpha=1)+
+  scale_x_continuous(limits = c(30500, 33000))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  labs(fill = "Model") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,1.01))+
+  ylab("Probability Density")+
+  scale_fill_manual(values=c("darkcyan","indianred"),labels=c("PPT and NPP", "Only PTT"))+
+  xlab("AIC Score")+
+  theme(axis.title.x =element_text( size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=14), 
+        legend.text = element_text(size=12))
+aicDensity
+```
 
-AICfig<-ggplot(mean_aic,aes(y=aic, x=model, fill=model))+
+```{r}
+rsquaredDensity<-ggplot(rsquared.binded, aes(r.squared, fill=model))+
+  geom_density(data=rsquared.binded, aes(x=r.squared, fill=model, after_stat(scaled)), alpha=1)+
+  scale_x_continuous(limits = c(.1, .5))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  labs(fill = "Previous-year Condition") +
+  scale_y_continuous(expand = c(0,0),limits = c(0,1.01))+
+  
+  scale_fill_manual(values=c("darkcyan","indianred"),labels=c("PPT and NPP", "Only PTT"))+
+  ylab("Probability Density")+
+  xlab("R Squared Value")+
+  theme(axis.title.x =element_text( size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=14), 
+        legend.text = element_text(size=12))
+```
+
+```{r}
+jpeg("Supporting fig 2(density) final.jpeg",
+     width=12,
+     height=6,
+     units="in",
+     res=300)
+rsquaredaicDensity<-ggarrange(aicDensity, rsquaredDensity,
+          nrow=1, ncol=2,common.legend = TRUE, labels=c('(a)','(b)'), hjust=-.1,  font.label = list(size = 16))
+rsquaredaicDensity
+dev.off()
+```
+
+
+```{r}
+
+AICfig<-ggplot(mean_aic,aes(y=mean, x=model, fill=model))+
   ylab("Mean AIC")+
   xlab("Model")+
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
   geom_bar(stat="identity", position="dodge")+
   scale_fill_manual(values = c("darkslategray3", "indianred"),
                     labels=c("only PPT","PPT and NPP"))+
+    geom_errorbar(aes(x = model, ymin = bottom99, ymax = top99), 
+                position = position_dodge(width = 0.9), 
+                width = 0.25,  # adjust the width of the error bars
+                colour = "black", 
+                alpha = 0.9, 
+                size = 1.3) + 
   rremove("grid")+
   theme(axis.line = element_line(),
         panel.background = element_blank())+

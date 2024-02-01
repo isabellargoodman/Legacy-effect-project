@@ -228,9 +228,9 @@ jpeg("currentPPT figure.jpeg",
      units="in",
      res=300)
 currentInteraction<-ggplot()+
-  geom_density(data=current_coefficients, aes(x=Spatiotemporal.current, fill=ecoregion,after_stat(scaled)),alpha=.6)+
+  geom_density(data=current_coefficients, aes(x=Spatiotemporal.current, fill=ecoregion,after_stat(scaled)),alpha=.4)+
   scale_fill_manual(values=c("firebrick3","gold","grey","lightblue","green4"),
-                     labels=c("Hot Deserts","Cold Deserts","California Annuals", "Northern Mixed Prairies","Shortgrass Steppe"))+
+                     labels=c("Hot deserts","Cold deserts","California annuals", "Northern mixed prairies","Shortgrass steppe"))+
  xlab("Change in sensitivity per legacy effect")+
  ylab("Probability Density")+
 geom_vline(xintercept = 0, linetype = "dashed", color = "black")+
@@ -280,23 +280,24 @@ jpeg("legacy effect by ecoregion_herb.jpeg",
      units="in",
      res=300)
 legeffect_byEco<-ggplot()+
-  geom_density(data=current_coefficients, aes(x=Temporal.current, fill=ecoregion, after_stat(scaled)), alpha=.6)+
-  scale_fill_manual(values=c("firebrick3","gold","grey","lightblue","green3"),
-                       labels=c("Hot Deserts","Cold Deserts","California Annuals", "Northern Mixed Prairies","Shortgrass Steppe"))+
+  geom_density(data=current_coefficients, aes(x=Temporal.current, fill=ecoregion, after_stat(scaled)), alpha=.4)+
+  scale_fill_manual(values=c("firebrick3","gold","grey","lightblue","green4"),
+                       labels=c("Hot deserts","Cold deserts","California annuals", "Northern mixed prairies","Shortgrass steppe"))+
  xlab("Effect of Previous-year NPP")+
  ylab("Probability Density")+
  theme_classic() + 
   labs(fill = "Ecoregion")+
-  theme(legend.key.size = unit(.75, 'cm'), #change legend key size
-        legend.title = element_text(size=18), #change legend title font size
-        legend.text = element_text(size=16))+ 
+  theme(legend.key.size = unit(.65, 'cm'), #change legend key size
+        legend.title = element_text(size=16), #change legend title font size
+        legend.text = element_text(size=15))+ 
   scale_y_continuous(expand = c(0,0),limits = c(0,1.05))+
+  scale_x_continuous(limits = c(.15,.9))+
  #scale_x_continuous(expand = c(0,0),limits = c(-2,2))+
   theme(axis.title.x =element_text( size=20),
         axis.title.y = element_text(size=20),
         axis.text.x = element_text(size=15),
         axis.text.y = element_text(size=15))+
-  theme(legend.position=c(.8,.5),
+  theme(legend.position=c(.8,.55),
     strip.background =element_rect(fill="white"),
     strip.text = element_text(size=15),
     panel.background = element_rect(fill=NA),
@@ -307,4 +308,110 @@ legeffect_byEco
 dev.off()
 
 ```
+
+```{r}
+# Assuming df is your data frame
+# Convert 'PPTdev' and 'lagNPPDev' to factors
+legacydata 
+legacydata$PPTdev <- as.factor(legacydata$PPTdev)
+legacydata$lagNPPdev <- as.factor(legacydata$lagNPPdev)
+
+# Load required libraries
+library(ggplot2)
+
+# Create an interaction plot
+interaction.plot(
+  x.factor = df$PPTdev,
+  trace.factor = df$lagNPPDev,
+  response = df$NPPdev,
+  type = "b",  # "b" for points connected by lines
+  legend = TRUE,
+  col = c("blue", "red"),  # customize colors if needed
+  pch = c(16, 17)  # customize symbols if needed
+)
+
+# Add labels and title
+title("Interaction Plot: PPTdev vs. NPPdev by lagNPPDev")
+xlabel("PPTdev")
+ylabel("NPPdev")
+
+# Show the plot
+
+```
+
+```{r}
+
+set.seed(123)
+
+total_rows <- nrow(calileggy)
+
+sample_size <- round(0.0001 * total_rows)
+
+# Randomly select 10% of the dataset
+random_sample <- calileggy[sample(1:total_rows, size = sample_size), ]
+
+random <- legacydata[sample(nrow(legacydata), 1), ]
+
+
+print(random_observation)
+
+calicurrent<-current_coefficients%>%
+  filter(ecoregion=="cali")
+
+calileggy<-legacydata%>%
+  filter(ecoregion=="cali")
+
+randomcali<-calileggy%>%
+  filter(ID==308569)
+
+ggplot(randomcali,aes(x=PPT,y=NPP))+
+  geom_point()+
+  stat_smooth(method="lm")
+  
+```
+
+```{r}
+random_sample$PPTdev <- as.factor(random_sample$PPTdev)   
+random_sample$lagNPPdev <- as.factor(random_sample$lagNPPdev)
+
+interaction.plot(
+  x.factor = random_sample$PPTdev,
+  trace.factor = random_sample$lagNPPdev,
+  response = random_sample$NPPdev,
+  type = "b",  # "b" for points connected by lines
+  legend = TRUE,
+  col = c("blue", "red"),  # customize colors if needed
+  pch = c(16, 17)  # customize symbols if needed
+)
+
+# Add labels and title
+title("Interaction Plot: PPTdev vs. NPPdev by lagNPPDev")
+xlabel("PPTdev")
+ylabel("NPPdev")
+
+# Show the plot
+
+```
+```{r}
+
+
+lm<-lm(NPPdev~PPTdev+lagNPPdev+PPTdev:lagNPPdev, data=calileggy) 
+summary(lm)
+```
+
+
+```{r}
+# Example using ggplot2
+library(ggplot2)
+
+ggplot(random_sample, aes(x = PPTdev, y = NPPdev, color = lagNPPdev)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Interaction Plot", x = "PPTdev", y = "NPPdev", color = "lagNPPdev")+
+  theme(legend.position = "none")
+
+```
+
+
+
 

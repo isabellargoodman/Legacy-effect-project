@@ -14,11 +14,12 @@ library(graphics)
 library(ggpubr)
 library(gridExtra)
 library(magick)
+library(grid)
  
-#loaddata
-setwd("~/Desktop")
+#load data
+setwd("~/Desktop/rds")
 legacydata<-readRDS("legacydata.rds")
-mlr<-readRDS("mlrmodel_coef4.rds")
+mlr<-readRDS("perpixelmodel_final.rds")
 ```
 
 ```{r}
@@ -95,9 +96,7 @@ plot(sgsshapefile,col='green4', lwd = .1,add=TRUE)
 plot(hotshapefile,col='firebrick3', lwd = .1,add=TRUE)
 
 legend('bottomleft', legend=c("California annuals","Northern mixed prairies",
-                              "Cold Deserts ","Shortgrass steppe", "Hot deserts"),
-       col=c("grey", "lightblue","gold","green4","firebrick3"), lty=1,
-       bty='n',lwd=2,cex=1.60,box.lty=0, )
+                              "Cold Deserts ","Shortgrass steppe", "Hot deserts"),fill=c("grey", "lightblue","gold","green4","firebrick3"),cex=1.60,box.lty = 0)
 dev.off()
 ```
 
