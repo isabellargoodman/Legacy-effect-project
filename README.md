@@ -10,7 +10,7 @@ format all data.Rmd: Format data
 
 # Step-2 
 
-analysis question 1.Rmd: This markdown file includes analysis and the bootstraping loop for answering question 1: whether or not previous-year NPP is still relevent in the model after inluding current-year PPT. ALso inlcudes code for supporitng figure 2.
+analysis question 1.Rmd: This markdown file includes analysis and the bootstraping loop for answering question 1: whether or not previous-year NPP is still relevent in the model after inluding current-year PPT. ALso inlcudes code for supporting figure 2.
 
 analysis question 2&3.Rmd: This markdown file includes analysis and the bootstrapping loop for the interaction between previous-year NPP and mean annual precpitation. Also includes code for figures 2a, 4, and 5. 
 
@@ -26,9 +26,9 @@ create figures
 
 ecoregions map.Rmd: This markdown file includes code to create figure 1b. 
 
-climate extreme analysis.Rmd: This markdown file includes code for analysis of legacy effects following climatically extreme years, and code to create figure 3.
+climate extreme analysis.Rmd: This markdown file includes code for analysis of legacy effects following climatically extreme years, and code to create figure 3 and supporting figure 3.
 
-figures for legacy paper.Rmd: This markdown file inlcudes code for creating figure 2, and supporting figure 5,6,and 7. 
+figures for legacy paper.Rmd: This markdown file inlcudes code for creating figure 2, and supporting figure 4 and 5. 
 
 # additional information
 
