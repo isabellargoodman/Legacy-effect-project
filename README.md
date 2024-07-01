@@ -8,8 +8,6 @@ data: npp_ppt_data.rds
 
 format all data.Rmd: Format data 
 
-# Step-2 
-
 analysis question 1.Rmd: This markdown file includes analysis and the bootstraping loop for answering question 1: whether or not previous-year NPP is still relevent in the model after inluding current-year PPT. ALso inlcudes code for supporting figure 2.
 
 analysis question 2&3.Rmd: This markdown file includes analysis and the bootstrapping loop for the interaction between previous-year NPP and mean annual precpitation. Also includes code for figures 2a, 4, and 5. 
@@ -21,7 +19,7 @@ cold desert analysis: This markdown file includes analysis for for supporting in
 functions.Rmd: This markdown file includes all functions used in the previous loops 
 
 
-# Step-3
+# Step-2
 create figures  
 
 ecoregions map.Rmd: This markdown file includes code to create figure 1b. 
