@@ -4,8 +4,6 @@ Code for 'Ubiqutous legacy effects on net primry production across western US dr
 # Step-1 
 run main analyses  
 
-data: npp_ppt_data.rds
-
 format all data.Rmd: Format data 
 
 analysis question 1.Rmd: This markdown file includes analysis and the bootstraping loop for answering question 1: whether or not previous-year NPP is still relevent in the model after inluding current-year PPT. ALso inlcudes code for supporting figure 2.
