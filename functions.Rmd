@@ -1,8 +1,10 @@
 ---
-title: "functions"
+title: "legacy effect functions"
+author: "isabella Goodman"
+date: "2025-07-07"
 output: html_document
-date: "2023-03-20"
 ---
+
 
 ```{r}
 above_below_map <- function(x){
@@ -50,6 +52,25 @@ bind.aic<-function(x){
   return(x.binded)
 }
 
+library(lmtest)
+library(ecm)
+
+df.dh.create <- function(x) {
+  h_stat <- durbinH(x,"lagNPPdev")
+  df <- data.frame(Durbin_H = h_stat)
+  df$id <- i
+  
+  return(df)
+}
+
+df.dw.create <- function(x) {
+  dw <- dwtest(x)$statistic[[1]]  # Extract the DW test statistic
+  df <- data.frame(Durbin_Watson = dw)
+  df$id <- i  # Assumes 'i' is defined outside this function
+  
+  return(df)
+}
+
 #
 #
 
@@ -93,6 +114,23 @@ bind.r.squared<-function(x){
   
   return(x.binded)
 }
+
+bind.dw.squared<-function(x){
+  
+  x.binded <- do.call("rbind", x)
+  colnames(x.binded)  <- c("Durbin_Watson","run.id")
+  
+  return(x.binded)
+}
+
+bind.dh.squared<-function(x){
+  
+  x.binded <- do.call("rbind", x)
+  colnames(x.binded)  <- c("Durbin_H","run.id")
+  
+  return(x.binded)
+}
+
 
 #
 #
@@ -301,7 +339,7 @@ list_to_df_with_ecoregion_map <- function(x,veg=T,full=F) {
   
   #slightly ammended version to deal with mm.y and per_herb difference in model 1 and 3
   
-  df2<-list_to_df_initial(lm_map_coef) #x
+  df2<-list_to_df_initial(lm_map_coef_std) #x
   
   #spatial slopes
   
@@ -490,4 +528,5 @@ list_to_df_with_ecoregion_current <- function(x,veg=T,full=F) {
   return(coefficients_wide_map)
 }
 ```
+
 
