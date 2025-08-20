@@ -1,3 +1,4 @@
+
 ---
 title: "secondary question 3"
 output: html_document
@@ -36,11 +37,15 @@ lm_herb_aic<-list()
 lm_map_rsquared<-list()
 lm_currentPPT_rsquared<-list()
 lm_herb_rsquared<-list()
+
+lm_map_dh<-list()
+lm_currentPPT_dh<-list()
+lm_herb_dh<-list()
 ```
 
 
 ```{r}
-for(i in 1:1000)
+for(i in 1:2)
 {
   # Stratify by region and the MAP of the region #
   test.strat.northern_mixed<-stratified(northern_ecoregion, "above_below", 0.0001)
@@ -69,7 +74,27 @@ lm_herb_aic[[i]]<-(df.aic.create(lm_herb))
 lm_map_rsquared[[i]]<-(df.r.squared.create(lm_map))
 lm_currentPPT_rsquared[[i]]<-(df.coef.create(lm_currentPPT))
 lm_herb_rsquared[[i]]<-(df.r.squared.create(lm_herb))
+
+lm_map_dh[[i]]<-(df.dh.create(lm_map))
+lm_currentPPT_dh[[i]]<-(df.dh.create(lm_currentPPT))
+lm_herb_dh[[i]]<-(df.dh.create(lm_herb))
+
 }
+```
+
+```{r}
+#Calculate Durbins H-statistic 
+library(ecm)
+durbinH(lm_currentPPT, "lagNPPdev")
+
+```
+
+```{r}
+with(test.strat, cor(NPPdev, lagNPPdev, use = "complete.obs"))
+```
+```{r}
+test<-lm(NPPdev~PPTdev+lagNPPdev+PPTdev:lagNPPdev, data=test.strat.california_annuals)
+durbinH(test,"lag")
 ```
 
 
@@ -91,6 +116,7 @@ lm_map_coef<-readRDS("lm_map_coef2.rds")
 lm_herb_coef<-readRDS("lm_herb_coef2.rds")
 lm_currentPPT_coef<-readRDS("lm_currentPPT_coef2.rds")
 ```
+
 
 
 ```{r}
@@ -187,125 +213,6 @@ geom_vline(xintercept = 0, size =.75, linetype = "dashed", color = "black")+
     axis.line.y = element_line(colour = "black"))
 mapInteraction
 
-
-```
-
-```{r}
-#create figure 4
-herbInteraction<-ggplot()+
-  geom_density(data=herb_coefficients, aes(x=Spatiotemporal.herb, fill=ecoregion,after_stat(scaled)),alpha=.4)+ 
-  scale_fill_manual(values=c(northern='lightblue',cali='grey',cold='gold',hot='firebrick3',sgs='green4'),
-                    labels=c(northern='Northern mixed prairies',
-                             cali='California annuals',cold='Cold deserts',hot='Hot deserts',sgs='Shortgrass steppe'))+
- xlab("Change in legacy effect \n per % herbaceous NPP")+
-geom_vline(xintercept = 0, size =.75,linetype = "dashed", color = "black")+
- ylab("Probability Density")+
- theme_classic() + 
-  labs(fill = "Ecoregion")+
- theme(legend.key.size = unit(.75, 'cm'), #change legend key size
-        legend.title = element_text(size=18), #change legend title font size
-        legend.text = element_text(size=16))+ 
-  scale_y_continuous(expand = c(0,0),limits = c(0,1.02))+
-  scale_x_continuous(limits = c(-2.5,1.5))+
-  theme(axis.title.x =element_text( size=20),
-        axis.title.y = element_text(size=20),
-        axis.text.x = element_text(size=16),
-        axis.text.y = element_text(size=16))+
-  theme(
-    strip.background =element_rect(fill="white"),
-    strip.text = element_text(size=15),
-    panel.background = element_rect(fill=NA),
-    panel.border = element_blank(), #make the borders clear in prep for just have two axes
-    axis.line.x = element_line(colour = "black"),
-    axis.line.y = element_line(colour = "black"))
-herbInteraction
-```
-
-```{r}
-jpeg("currentPPT figure.jpeg",
-    width=10,
-     height=7,
-     units="in",
-     res=300)
-currentInteraction<-ggplot()+
-  geom_density(data=current_coefficients, aes(x=Spatiotemporal.current, fill=ecoregion,after_stat(scaled)),alpha=.4)+
-  scale_fill_manual(values=c("firebrick3","gold","grey","lightblue","green4"),
-                     labels=c("Hot deserts","Cold deserts","California annuals", "Northern mixed prairies","Shortgrass steppe"))+
- xlab("Change in sensitivity per legacy effect")+
- ylab("Probability Density")+
-geom_vline(xintercept = 0, linetype = "dashed", color = "black")+
- theme_classic() + 
-  labs(fill = "Ecoregion")+
-  theme(legend.key.size = unit(.75, 'cm'), #change legend key size
-        legend.title = element_text(size=18), #change legend title font size
-        legend.text = element_text(size=16))+ 
-  scale_y_continuous(expand = c(0,0),limits = c(0,1.02))+
-  scale_x_continuous(expand = c(0,0),limits = c(-.0025,.0032))+
-   theme(axis.title.x =element_text( size=20),
-        axis.title.y = element_text(size=20),
-        axis.text.x = element_text(size=16),
-        axis.text.y = element_text(size=16))+
-  theme(legend.position = c(.85,.65))+
-  theme(
-    strip.background =element_rect(fill="white"),
-    strip.text = element_text(size=15),
-    panel.background = element_rect(fill=NA),
-    panel.border = element_blank(), #make the borders clear in prep for just have two axes
-    axis.line.x = element_line(colour = "black"),
-    axis.line.y = element_line(colour = "black"))
-currentInteraction
-dev.off()
-```
-
-```{r}
-#create figure 4
-library(ggpubr)
-jpeg("2panel Interactions.jpeg",
-     width=18,
-     height=10,
-     units="in",
-     res=300)
-twoInteractions<-ggarrange(mapInteraction,herbInteraction+rremove("y.text")+rremove("y.title"),
-          nrow=1, ncol=2, labels=c('(a)','(b)'),common.legend = T)
-twoInteractions
-dev.off()
-```
-
-
-```{r}
-#create figure 3b
-jpeg("legacy effect by ecoregion.jpeg",
-     width=18,
-     height=10,
-     units="in",
-     res=300)
-legeffect_byEco<-ggplot()+
-  geom_density(data=current_coefficients, aes(x=Temporal.current, fill=ecoregion, after_stat(scaled)), alpha=.4)+
-  scale_fill_manual(values=c("firebrick3","gold","grey","lightblue","green4"),
-                       labels=c("Hot deserts","Cold deserts","California annuals", "Northern mixed prairies","Shortgrass steppe"))+
- xlab("Effect of Previous-year NPP")+
- ylab("Probability Density")+
- theme_classic() + 
-  labs(fill = "Ecoregion")+
-  theme(legend.key.size = unit(.65, 'cm'), #change legend key size
-        legend.title = element_text(size=16), #change legend title font size
-        legend.text = element_text(size=15))+ 
-  scale_y_continuous(expand = c(0,0),limits = c(0,1.05))+
-  scale_x_continuous(limits = c(.15,.9))+
- #scale_x_continuous(expand = c(0,0),limits = c(-2,2))+
-  theme(axis.title.x =element_text( size=20),
-        axis.title.y = element_text(size=20),
-        axis.text.x = element_text(size=15),
-        axis.text.y = element_text(size=15))+
-  theme(legend.position=c(.8,.55),
-    strip.background =element_rect(fill="white"),
-    strip.text = element_text(size=15),
-    panel.background = element_rect(fill=NA),
-    panel.border = element_blank(), #make the borders clear in prep for just have two axes
-    axis.line.x = element_line(colour = "black"),
-    axis.line.y = element_line(colour = "black"))
-legeffect_byEco
-dev.off()
 
 ```
 
