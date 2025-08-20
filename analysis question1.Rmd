@@ -1,3 +1,4 @@
+
 ---
 title: "question 1 secondary"
 output: html_document
@@ -18,6 +19,7 @@ legacydata<-readRDS("legacydata.rds")
 
 ```
 
+
 ```{r}
 #Subset data by ecoregion
 cali_ecoregion<-legacydata[legacydata$ecoregion=='cali',]
@@ -28,6 +30,7 @@ hot_ecoregion<-legacydata[legacydata$ecoregion=='hot',]
 ```
 
 ```{r}
+#Create empty lists for coefficients, aics, and rsquareds
 lm_onlyPPT_coef<-list()
 lm_PPTnpp_coef<-list()
 
@@ -36,6 +39,9 @@ lm_PPTnpp_aic<-list()
 
 lm_onlyPPT_rsquared<-list()
 lm_PPTnpp_rsquared<-list()
+
+lm_onlyPPT_dw<-list()
+lm_PPTnpp_dh<-list()
 ```
 
 
@@ -65,8 +71,24 @@ lm_PPTnpp_aic[[i]]<-(df.aic.create(lm_PPTnpp))
 
 lm_onlyPPT_rsquared[[i]]<-(df.r.squared.create(lm_onlyPPT))
 lm_PPTnpp_rsquared[[i]]<-(df.r.squared.create(lm_PPTnpp))
+
+lm_onlyPPT_dw[[i]]<-(df.dw.create(lm_onlyPPT))
+lm_PPTnpp_dh[[i]]<-(df.dh.create(lm_PPTnpp))
+
 }
 ```
+
+
+```{r}
+library(lmtest)
+library(car)
+
+#WATSON_DURBIN TEST
+
+dwtest(lm_onlyPPT)
+dwtest(lm_PPTnpp)
+```
+
 
 ```{r}
 write_rds(lm_onlyPPT_coef,"lm_onlyPPT_coef.rds")
@@ -141,6 +163,16 @@ write_rds(rsquared.binded,"rsquared.binded2.rds")
 setwd("~/Desktop")
 aic.binded<-readRDS("aic.binded2.rds")
 rsquared.binded<-readRDS("rsquared.binded2.rds")
+
+
+```
+
+```{r}
+durbinwatson<-bind.dw.squared(lm_onlyPPT_dw)
+
+
+durbinH<-bind.dw.squared(lm_PPTnpp_dh)
+
 ```
 
 ```{r}
@@ -148,6 +180,84 @@ rsquared.binded<-readRDS("rsquared.binded2.rds")
 map_ecoregion_temporal_means$top99<-map_ecoregion_temporal_means$mean+(2.576*map_ecoregion_temporal_means$se)
 map_ecoregion_temporal_means$bottom99<-map_ecoregion_temporal_means$mean-(2.576*map_ecoregion_temporal_means$se)
 ```
+```{r}
+#Durbin watson density 
+jpeg("durbin watson.jpeg",
+     width=12,
+     height=6,
+     units="in",
+     res=300)
+durbinwatsondensity<-ggplot(durbinwatson)+
+  geom_density(data=durbinwatson, aes(x=Durbin_Watson, after_stat(scaled)), alpha=1)+
+ # scale_x_continuous(limits = c(.1, .5))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  labs(fill = "Previous-year Condition") +
+ #scale_y_continuous(expand = c(0,0),limits = c(0,1.01))+
+  ylab("Probability Density")+
+  xlab("Durbin Watson Value")+
+  theme(axis.title.x =element_text( size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=14), 
+        legend.text = element_text(size=12))
+durbinwatsondensity
+dev.off()
+
+jpeg("Durbins H.jpeg",
+     width=12,
+     height=6,
+     units="in",
+     res=300)
+durbinHdensity<-ggplot(durbinH)+
+  geom_density(data=durbinH, aes(x=Durbin_Watson, after_stat(scaled)), alpha=1)+
+ # scale_x_continuous(limits = c(.1, .5))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  labs(fill = "Previous-year Condition") +
+ #scale_y_continuous(expand = c(0,0),limits = c(0,1.01))+
+  ylab("Probability Density")+
+  xlab("Durbin H-statistic")+
+  theme(axis.title.x =element_text( size=18),
+        axis.title.y = element_text(size=18),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14))+
+  theme(legend.position = c(.8,.5))+
+  theme(
+    strip.background =element_rect(fill="white"),
+    strip.text = element_text(size=17),
+    panel.background = element_rect(fill=NA),
+    panel.border = element_blank(), 
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+
+  theme(legend.key.size = unit(.75, 'cm'), 
+        legend.title = element_text(size=14), 
+        legend.text = element_text(size=12))
+durbinHdensity
+
+```
+
+```{r}
+dwmean<-durbinwatson%>%
+  summarise_at(vars(Durbin_Watson),
+               list(mean))
+
+dhmean<-durbinH%>%
+  summarise_at(vars(Durbin_Watson),
+               list(mean))
+
+```
+
 
 ```{r}
 #calculate mean coefficients, AIC, and R-squared values
@@ -349,4 +459,3 @@ mean
 mean+(2.576*SE)
 mean-(2.576*SE)
 ```
-
